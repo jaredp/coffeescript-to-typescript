@@ -10,7 +10,7 @@ Error.stackTraceLimit = Infinity
 
 # Import the helpers we plan to use.
 {compact, flatten, extend, merge, del, starts, ends, last, some,
-addLocationDataFn, locationDataToString, throwSyntaxError} = require './helpers'
+addLocationDataFn, locationDataToString, throwSyntaxError, sendSyntaxWarning} = require './helpers'
 
 # Functions required by parser
 exports.extend = extend
@@ -186,6 +186,9 @@ exports.Base = class Base
   error: (message) ->
     throwSyntaxError message, @locationData
 
+  warn: (message) ->
+    sendSyntaxWarning message, @locationData
+
   makeCode: (code) ->
     new CodeFragment this, code
 
@@ -303,7 +306,7 @@ exports.Block = class Block extends Base
   # It would be better not to generate them in the first place, but for now,
   # clean up obvious double-parentheses.
   compileRoot: (o) ->
-    o.indent  = if o.bare then '' else TAB
+    o.indent  = '' #if o.bare then '' else TAB
     o.level   = LEVEL_TOP
     @spaced   = yes
     o.scope   = new Scope null, this, null
@@ -323,7 +326,7 @@ exports.Block = class Block extends Base
       @expressions = rest
     fragments = @compileWithDeclarations o
     return fragments if o.bare
-    [].concat prelude, @makeCode("(function() {\n"), fragments, @makeCode("\n}).call(this);\n")
+    [].concat prelude, fragments
 
   # Compile the expressions body for the contents of a function, with
   # declarations of all inner variables pushed up to the top.
@@ -1078,6 +1081,88 @@ exports.Class = class Class extends Base
     decl  = @determineName()
     name  = decl or '_Class'
     name = "_#{name}" if name.reserved
+
+    answer = flatten [
+      @makeCode "class #{name}"
+      if @parent then [@makeCode( " extends "), @parent.compileToFragments o] else []
+      @makeCode " {\n"
+    ]
+
+    @body.spaced = yes
+    o.indent += TAB
+
+    ###
+    @body.traverseChildren false, (node) ->
+      return false if node.classBody
+      if node instanceof Literal and node.value is 'this'
+        node.value    = name
+      else if node instanceof Code
+        node.klass    = name
+        node.context  = name if node.bound
+
+    @traverseChildren false, (child) =>
+      cont = true
+      return false if child instanceof Class
+      if child instanceof Block
+        for node, i in exps = child.expressions
+          if node instanceof Value and node.isObject(true)
+            cont = false
+            exps[i] = @addProperties node, name, o
+        child.expressions = exps = flatten exps
+      cont and child not instanceof Class
+    ###
+
+    #answer.push (@body.compileNode o)...
+
+    for node, node_index in @body.expressions[..]
+
+      # static variables / methods
+      if node instanceof Assign and node.variable.base.value is "this" and node.variable.properties.length == 1
+        if node.context?
+          node.warn "can not have a non-vanilla assign in class definition"
+
+        varname = node.variable.properties[0].name
+        value = node.value
+
+        if value instanceof Code
+          value.static = yes
+          if value.boundaries  #...?
+            value.context = name
+
+          node.warn "STATIC METHOD TRANSLATION UNIMPLEMENTED"
+        else
+          answer = answer.concat flatten [
+            @makeCode (if node_index isnt 0 then "\n\n" else '')
+            @makeCode "#{o.indent}static "
+            varname.compileToFragments o
+            @makeCode " = "
+            value.compileToFragments o
+            @makeCode ";"
+          ]
+
+      else if node instanceof Value and node.base instanceof Object
+        for assign, assign_index in node.base.properties
+          if assign not instanceof Assign or assign.context isnt 'object' or assign.variable.properties.length isnt 0
+            assign.warn "not sure what this is; not generating"
+            continue
+
+          methodName = assign.variable
+          fn = assign.value
+
+          answer = answer.concat flatten [
+            @makeCode (if node_index isnt 0 or assign_index isnt 0 then "\n\n" else '')
+            @makeCode "#{o.indent}"
+            methodName.compileToFragments o
+            fn.compileToFragments o
+          ]
+
+      else
+        node.warn "cannot be in class definition"
+
+    answer.push @makeCode "\n}"
+    answer
+
+    ###
     lname = new Literal name
 
     @hoistDirectivePrologue()
@@ -1088,6 +1173,8 @@ exports.Class = class Class extends Base
     @body.expressions.unshift @ctor unless @ctor instanceof Code
     @body.expressions.push lname
     @body.expressions.unshift @directives...
+
+    console.log @toString()
 
     call  = Closure.wrap @body
 
@@ -1101,6 +1188,7 @@ exports.Class = class Class extends Base
     klass = new Parens call, yes
     klass = new Assign @variable, klass if @variable
     klass.compileToFragments o
+    ###
 
 #### Assign
 
@@ -1334,7 +1422,7 @@ exports.Code = class Code extends Base
         o.scope.parent.assign '_this', 'this'
     idt   = o.indent
     code  = 'function'
-    code  += ' ' + @name if @ctor
+    code  += ' ' + @name if @name?
     code  += '('
     answer = [@makeCode(code)]
     for p, i in params

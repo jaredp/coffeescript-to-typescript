@@ -3,6 +3,9 @@
 # arrays, count characters, that sort of thing.
 
 # Peek at the beginning of a given string to see if it matches a sequence.
+
+fs = require 'fs'
+
 exports.starts = (string, literal, start) ->
   literal is string.substr start, literal.length
 
@@ -143,12 +146,25 @@ exports.throwSyntaxError = (message, location) ->
   error.location = location
   throw error
 
+translating_filename = ''
+translating_code = ''
+
+exports.setTranslatingFile = (fname, code) ->
+  translating_filename = fname
+  translating_code = code || fs.readFileSync(translating_filename, 'utf8')
+
+exports.sendSyntaxWarning = (message, location) ->
+  location.last_line ?= location.first_line
+  location.last_column ?= location.first_column
+  error = new SyntaxError message
+  error.location = location
+  console.log (exports.prettyErrorMessage error, translating_filename, translating_code, true, "warning")
+
 # Creates a nice error message like, following the "standard" format
 # <filename>:<line>:<col>: <message> plus the line with the error and a marker
 # showing where the error is.
-exports.prettyErrorMessage = (error, filename, code, useColors) ->
+exports.prettyErrorMessage = (error, filename, code, useColors, errorOrWarn="error") ->
   return error.stack or "#{error}" unless error.location
-
   # Prefer original source file information stored in the error if present.
   filename = error.filename or filename
   code     = error.code or code
@@ -166,7 +182,7 @@ exports.prettyErrorMessage = (error, filename, code, useColors) ->
     marker   = colorize marker
 
   message = """
-    #{filename}:#{first_line + 1}:#{first_column + 1}: error: #{error.message}
+    #{filename}:#{first_line + 1}:#{first_column + 1}: #{errorOrWarn}: #{error.message}
     #{codeLine}
     #{marker}
   """

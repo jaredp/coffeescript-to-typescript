@@ -12,6 +12,8 @@ child_process = require 'child_process'
 helpers       = require './helpers'
 SourceMap     = require './sourcemap'
 
+{setTranslatingFile} = require './helpers'
+
 # The current CoffeeScript version number.
 exports.VERSION = '1.6.3'
 
@@ -143,6 +145,7 @@ exports.eval = (code, options = {}) ->
 compileFile = (filename, sourceMap) ->
   raw = fs.readFileSync filename, 'utf8'
   stripped = if raw.charCodeAt(0) is 0xFEFF then raw.substring 1 else raw
+  setTranslatingFile filename, stripped
 
   try
     answer = compile(stripped, {filename, sourceMap, literate: helpers.isLiterate filename})

@@ -13,6 +13,8 @@ CoffeeScript   = require './coffee-script'
 {spawn, exec}  = require 'child_process'
 {EventEmitter} = require 'events'
 
+{setTranslatingFile} = require './helpers'
+
 exists         = fs.exists or path.exists
 useWinPathSep  = path.sep is '\\'
 
@@ -114,6 +116,7 @@ compilePath = (source, topLevel, base) ->
 # requested options. If evaluating the script directly sets `__filename`,
 # `__dirname` and `module.filename` to be correct relative to the script's path.
 compileScript = (file, input, base=null) ->
+  setTranslatingFile file
   o = opts
   options = compileOptions file, base
   try
@@ -254,7 +257,7 @@ removeSource = (source, base, removeJs) ->
           timeLog "removed #{source}"
 
 # Get the corresponding output JavaScript path for a source file.
-outputPath = (source, base, extension=".js") ->
+outputPath = (source, base, extension=".ts") ->
   basename  = helpers.baseFileName source, yes, useWinPathSep
   srcDir    = path.dirname source
   baseDir   = if base in ['.', './'] then srcDir else srcDir.substring base.length
@@ -337,7 +340,7 @@ compileOptions = (filename, base) ->
       answer = helpers.merge answer,
         sourceRoot: ""
         sourceFiles: [helpers.baseFileName filename, no, useWinPathSep]
-        generatedFile: helpers.baseFileName(filename, yes, useWinPathSep) + ".js"
+        generatedFile: helpers.baseFileName(filename, yes, useWinPathSep) + ".ts"
   answer
 
 # Start up a new Node.js instance with the arguments in `--nodejs` passed to
