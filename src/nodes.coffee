@@ -1091,7 +1091,6 @@ exports.Class = class Class extends Base
     @body.spaced = yes
     o.indent += TAB
 
-    # TODO: pull out (static) function generation
     for node, node_index in @body.expressions[..]
       # static variables / methods
       if node instanceof Assign and node.variable.base.value is "this" and node.variable.properties.length == 1
@@ -1184,6 +1183,15 @@ exports.Assign = class Assign extends Base
       return @compilePatternMatch o if @variable.isArray() or @variable.isObject()
       return @compileSplice       o if @variable.isSplice()
       return @compileConditional  o if @context in ['||=', '&&=', '?=']
+
+    if @value instanceof Code
+      if match = METHOD_DEF.exec name       # I'm actually not sure what we're doing here
+        @value.klass = match[1] if match[1]
+        @value.name  = match[2] ? match[3] ? match[4] ? match[5]
+
+      @value.fnName = @variable
+      return @value.compileToFragments o
+
     compiledName = @variable.compileToFragments o, LEVEL_LIST
     name = fragmentsToText compiledName
     unless @context
@@ -1195,9 +1203,7 @@ exports.Assign = class Assign extends Base
           o.scope.add name, 'var'
         else
           o.scope.find name
-    if @value instanceof Code and match = METHOD_DEF.exec name
-      @value.klass = match[1] if match[1]
-      @value.name  = match[2] ? match[3] ? match[4] ? match[5]
+
     val = @value.compileToFragments o, LEVEL_LIST
     return (compiledName.concat @makeCode(": "), val) if @context is 'object'
     answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
