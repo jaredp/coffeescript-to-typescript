@@ -39,6 +39,14 @@ exports.compile = compile = (code, options = {}) ->
 
   fragments = parser.parse(lexer.tokenize code, options).compileToFragments options
 
+  # sanity check; very useful for debugging compiler
+  for fragment in fragments
+    if fragment.constructor.name != 'CodeFragment'
+      console.log "Internal Type Error: expected code fragment, found"
+      console.log "    #{fragment.constructor.name}:", fragment, "\n"
+      foundNonFragment = yes
+  process.exit(1) if foundNonFragment
+
   currentLine = 0
   currentLine += 1 if options.header
   currentLine += 1 if options.shiftLine

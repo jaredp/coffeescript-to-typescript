@@ -996,84 +996,6 @@ exports.Class = class Class extends Base
       @ctor.body.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
     return
 
-  # Merge the properties from a top-level object as prototypal properties
-  # on the class.
-  addProperties: (node, name, o) ->
-    props = node.base.properties[..]
-    exprs = while assign = props.shift()
-      if assign instanceof Assign
-        base = assign.variable.base
-        delete assign.context
-        func = assign.value
-        if base.value is 'constructor'
-          if @ctor
-            assign.error 'cannot define more than one constructor in a class'
-          if func.bound
-            assign.error 'cannot define a constructor as a bound function'
-          if func instanceof Code
-            assign = @ctor = func
-          else
-            @externalCtor = o.scope.freeVariable 'class'
-            assign = new Assign new Literal(@externalCtor), func
-        else
-          if assign.variable.this
-            func.static = yes
-            if func.bound
-              func.context = name
-          else
-            assign.variable = new Value(new Literal(name), [(new Access new Literal 'prototype'), new Access base])
-            if func instanceof Code and func.bound
-              @boundFuncs.push base
-              func.bound = no
-      assign
-    compact exprs
-
-  # Walk the body of the class, looking for prototype properties to be converted.
-  walkBody: (name, o) ->
-    @traverseChildren false, (child) =>
-      cont = true
-      return false if child instanceof Class
-      if child instanceof Block
-        for node, i in exps = child.expressions
-          if node instanceof Value and node.isObject(true)
-            cont = false
-            exps[i] = @addProperties node, name, o
-        child.expressions = exps = flatten exps
-      cont and child not instanceof Class
-
-  # `use strict` (and other directives) must be the first expression statement(s)
-  # of a function body. This method ensures the prologue is correctly positioned
-  # above the `constructor`.
-  hoistDirectivePrologue: ->
-    index = 0
-    {expressions} = @body
-    ++index while (node = expressions[index]) and node instanceof Comment or
-      node instanceof Value and node.isString()
-    @directives = expressions.splice 0, index
-
-  # Make sure that a constructor is defined for the class, and properly
-  # configured.
-  ensureConstructor: (name, o) ->
-    missing = not @ctor
-    @ctor or= new Code
-    @ctor.ctor = @ctor.name = name
-    @ctor.klass = null
-    @ctor.noReturn = yes
-    if missing
-      superCall = new Literal "#{name}.__super__.constructor.apply(this, arguments)" if @parent
-      superCall = new Literal "#{@externalCtor}.apply(this, arguments)" if @externalCtor
-      if superCall
-        ref = new Literal o.scope.freeVariable 'ref'
-        @ctor.body.unshift new Assign ref, superCall
-      @addBoundFunctions o
-      if superCall
-        @ctor.body.push ref
-        @ctor.body.makeReturn()
-      @body.expressions.unshift @ctor
-    else
-      @addBoundFunctions o
-
-
   # Instead of generating the JavaScript string directly, we build up the
   # equivalent syntax tree and compile that, in pieces. You can see the
   # constructor, property assignments, and inheritance getting built out below.
@@ -1184,7 +1106,7 @@ exports.Assign = class Assign extends Base
       return @compileSplice       o if @variable.isSplice()
       return @compileConditional  o if @context in ['||=', '&&=', '?=']
 
-    if @value instanceof Code
+    if @value instanceof Code and not @variable.isComplex()
       if match = METHOD_DEF.exec name       # I'm actually not sure what we're doing here
         @value.klass = match[1] if match[1]
         @value.name  = match[2] ? match[3] ? match[4] ? match[5]
@@ -1365,19 +1287,21 @@ exports.Code = class Code extends Base
         val = ref = param.asReference o
         val = new Op '?', ref, param.value if param.value
         exprs.push new Assign new Value(param.name), val, '=', param: yes
+        params.push [ref.compileNode o]
       else
-        ref = param
-        if param.value
-          lit = new Literal ref.name.value + ' == null'
-          val = new Assign new Value(param.name), param.value, '='
-          exprs.push new If lit, val
-      params.push ref unless splats
+        params.push flatten [
+          if param.splat then @makeCode '...' else []
+          param.name.compileNode o
+          if param.value then [
+            @makeCode(" = ")
+            param.value.compileNode o
+          ] else []
+        ]
+      o.scope.parameter fragmentsToText param
+
     wasEmpty = @body.isEmpty()
     exprs.unshift splats if splats
     @body.expressions.unshift exprs... if exprs.length
-    for p, i in params
-      params[i] = p.compileToFragments o
-      o.scope.parameter fragmentsToText params[i]
     uniqs = []
     @eachParamName (name, node) ->
       node.error "multiple parameters named '#{name}'" if name in uniqs
@@ -1395,16 +1319,16 @@ exports.Code = class Code extends Base
       if @fnName? and not @isMethod then  @makeCode ' '               else []
       if @fnName? then                    @fnName.compileNode o       else []
       @makeCode '('
+      @joinFragmentArrays params, ', '
+      @makeCode ') {'
+      unless @body.isEmpty() then [
+        @makeCode("\n")
+        @body.compileWithDeclarations(o)
+        @makeCode("\n#{@tab}")
+      ] else []
+      @makeCode '}'
     ]
 
-    for p, i in params
-      if i then answer.push @makeCode ", "
-      answer.push p...
-    answer.push @makeCode ') {'
-    answer = answer.concat(@makeCode("\n"), @body.compileWithDeclarations(o), @makeCode("\n#{@tab}")) unless @body.isEmpty()
-    answer.push @makeCode '}'
-
-    return [@makeCode(@tab), answer...] if @ctor
     if @front or (o.level >= LEVEL_ACCESS) then @wrapInBraces answer else answer
 
   eachParamName: (iterator) ->
