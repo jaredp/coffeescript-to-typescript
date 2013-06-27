@@ -12,6 +12,7 @@ optparse       = require './optparse'
 CoffeeScript   = require './coffee-script'
 {spawn, exec}  = require 'child_process'
 {EventEmitter} = require 'events'
+require('source-map-support').install()
 
 {setTranslatingFile} = require './helpers'
 

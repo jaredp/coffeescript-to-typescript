@@ -1091,31 +1091,8 @@ exports.Class = class Class extends Base
     @body.spaced = yes
     o.indent += TAB
 
-    ###
-    @body.traverseChildren false, (node) ->
-      return false if node.classBody
-      if node instanceof Literal and node.value is 'this'
-        node.value    = name
-      else if node instanceof Code
-        node.klass    = name
-        node.context  = name if node.bound
-
-    @traverseChildren false, (child) =>
-      cont = true
-      return false if child instanceof Class
-      if child instanceof Block
-        for node, i in exps = child.expressions
-          if node instanceof Value and node.isObject(true)
-            cont = false
-            exps[i] = @addProperties node, name, o
-        child.expressions = exps = flatten exps
-      cont and child not instanceof Class
-    ###
-
-    #answer.push (@body.compileNode o)...
-
+    # TODO: pull out (static) function generation
     for node, node_index in @body.expressions[..]
-
       # static variables / methods
       if node instanceof Assign and node.variable.base.value is "this" and node.variable.properties.length == 1
         if node.context?
@@ -1126,10 +1103,17 @@ exports.Class = class Class extends Base
 
         if value instanceof Code
           value.static = yes
+          value.isMethod = yes
+          value.fnName = varname
+
           if value.boundaries  #...?
             value.context = name
 
-          node.warn "STATIC METHOD TRANSLATION UNIMPLEMENTED"
+          answer = answer.concat flatten [
+            @makeCode (if node_index isnt 0 then "\n\n" else '')
+            @makeCode "#{o.indent}static "
+            value.compileToFragments o
+          ]
         else
           answer = answer.concat flatten [
             @makeCode (if node_index isnt 0 then "\n\n" else '')
@@ -1149,10 +1133,16 @@ exports.Class = class Class extends Base
           methodName = assign.variable
           fn = assign.value
 
+          if fn not instanceof Code
+            assign.warn "not sure what this is; not generating"
+            continue
+
+          fn.isMethod = yes
+          fn.fnName = methodName
+
           answer = answer.concat flatten [
             @makeCode (if node_index isnt 0 or assign_index isnt 0 then "\n\n" else '')
             @makeCode "#{o.indent}"
-            methodName.compileToFragments o
             fn.compileToFragments o
           ]
 
@@ -1161,34 +1151,6 @@ exports.Class = class Class extends Base
 
     answer.push @makeCode "\n}"
     answer
-
-    ###
-    lname = new Literal name
-
-    @hoistDirectivePrologue()
-    @setContext name
-    @walkBody name, o
-    @ensureConstructor name, o
-    @body.spaced = yes
-    @body.expressions.unshift @ctor unless @ctor instanceof Code
-    @body.expressions.push lname
-    @body.expressions.unshift @directives...
-
-    console.log @toString()
-
-    call  = Closure.wrap @body
-
-    if @parent
-      @superClass = new Literal o.scope.freeVariable 'super', no
-      @body.expressions.unshift new Extends lname, @superClass
-      call.args.push @parent
-      params = call.variable.params or call.variable.base.params
-      params.push new Param @superClass
-
-    klass = new Parens call, yes
-    klass = new Assign @variable, klass if @variable
-    klass.compileToFragments o
-    ###
 
 #### Assign
 
@@ -1421,10 +1383,14 @@ exports.Code = class Code extends Base
       else if not @static
         o.scope.parent.assign '_this', 'this'
     idt   = o.indent
-    code  = 'function'
-    code  += ' ' + @name if @name?
-    code  += '('
-    answer = [@makeCode(code)]
+
+    answer = flatten [
+      if not @isMethod? then              @makeCode 'function'        else []
+      if @fnName? and not @isMethod then  @makeCode ' '               else []
+      if @fnName? then                    @fnName.compileNode o       else []
+      @makeCode '('
+    ]
+
     for p, i in params
       if i then answer.push @makeCode ", "
       answer.push p...
