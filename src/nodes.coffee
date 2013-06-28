@@ -989,6 +989,7 @@ exports.Class = class Class extends Base
   # Ensure that all functions bound to the instance are proxied in the
   # constructor.
   addBoundFunctions: (o) ->
+    #FIXME: create ctor if none exists
     for bvar in @boundFuncs
       lhs = (new Value (new Literal "this"), [new Access bvar]).compile o
       @ctor.body.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
@@ -1012,18 +1013,28 @@ exports.Class = class Class extends Base
     o.indent += TAB
 
     members = []
+    addMember = (assign)=>
+      members.push assign
+      if assign.variable.isNamed "constructor"
+        @ctor = assign.value
+      if assign.value instanceof Code and assign.value.bound
+        @boundFuncs.push assign.variable
+        assign.value.bound = no
+
     for node in @body.expressions
       if node instanceof Assign
-        members.push node
+        addMember node
       else if node instanceof Value and node.base instanceof Object
         for assign in node.base.properties
           if assign instanceof Assign
-            members.push assign
+            addMember assign
           else
             assign.warn "not sure what this is; not generating"
             continue
       else
-        node.warn "cannot be in class definition"
+        node.warn "cannot be in class definition; not generating"
+
+    @addBoundFunctions()
 
     for assign, assign_index in members
       answer.push @makeCode "\n\n" if assign_index isnt 0
