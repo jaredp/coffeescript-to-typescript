@@ -1093,12 +1093,11 @@ exports.Assign = class Assign extends Base
       return @compileSplice       o if @variable.isSplice()
       return @compileConditional  o if @context in ['||=', '&&=', '?=']
 
-    if @value instanceof Code and not @variable.isComplex()
+    if @value instanceof Code and (@value.fnName = @variable.vanillaName())
       if match = METHOD_DEF.exec name       # I'm actually not sure what we're doing here
         @value.klass = match[1] if match[1]
         @value.name  = match[2] ? match[3] ? match[4] ? match[5]
 
-      @value.fnName = @variable
       return @value.compileToFragments o
 
     compiledName = @variable.compileToFragments o, LEVEL_LIST
@@ -1241,6 +1240,8 @@ exports.Code = class Code extends Base
     @bound   = tag is 'boundfunc'
     @context = '_this' if @bound
 
+  # @fnName = Literal?
+
   children: ['params', 'body']
 
   isStatement: -> !!@ctor
@@ -1263,7 +1264,7 @@ exports.Code = class Code extends Base
     @eachParamName (name) -> # this step must be performed before the others
       unless o.scope.check name then o.scope.parameter name
     for param in @params
-      if (member = atProperty param.name) and @fnName.isNamed 'constructor'
+      if (member = atProperty param.name) and @fnName.value == 'constructor'
         jsParam = [ @makeCode("public "), member.compileNode o ]
       else unless param.isComplex()
         jsParam = [ param.name.compileNode o ]
