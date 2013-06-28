@@ -472,8 +472,8 @@ exports.Value = class Value extends Base
   hasProperties: ->
     !!@properties.length
 
-  vanillaName: -> return @base unless @hasProperties()
-  isNamed: (name) -> not @hasProperties() and @base.value == name
+  vanillaName: -> return @base unless @isComplex()
+  isNamed: (name) -> not @isComplex() and @base.value == name
 
   # Some boolean checks for the benefit of other nodes.
   isArray        : -> not @properties.length and @base instanceof Arr
@@ -550,6 +550,12 @@ exports.Value = class Value extends Base
           snd.base = ref
         return new If new Existence(fst), snd, soak: on
       no
+
+atProperty = (expr) ->
+  if expr instanceof Value and expr.base.value is 'this' and expr.properties.length == 1
+    expr.properties[0].name
+  else
+    no
 
 #### Comment
 
@@ -1016,62 +1022,49 @@ exports.Class = class Class extends Base
     @body.spaced = yes
     o.indent += TAB
 
-    for node, node_index in @body.expressions[..]
-      # static variables / methods
-      if node instanceof Assign and node.variable.base.value is "this" and node.variable.properties.length == 1
-        if node.context?
-          node.warn "can not have a non-vanilla assign in class definition"
-
-        varname = node.variable.properties[0].name
-        value = node.value
-
-        if value instanceof Code
-          value.static = yes
-          value.isMethod = yes
-          value.fnName = varname
-
-          if value.boundaries  #...?
-            value.context = name
-
-          answer = answer.concat flatten [
-            @makeCode (if node_index isnt 0 then "\n\n" else '')
-            @makeCode "#{o.indent}static "
-            value.compileToFragments o
-          ]
-        else
-          answer = answer.concat flatten [
-            @makeCode (if node_index isnt 0 then "\n\n" else '')
-            @makeCode "#{o.indent}static "
-            varname.compileToFragments o
-            @makeCode " = "
-            value.compileToFragments o
-            @makeCode ";"
-          ]
-
+    members = []
+    for node in @body.expressions
+      if node instanceof Assign
+        members.push node
       else if node instanceof Value and node.base instanceof Object
-        for assign, assign_index in node.base.properties
-          if assign not instanceof Assign or assign.context isnt 'object' or assign.variable.properties.length isnt 0
+        for assign in node.base.properties
+          if assign instanceof Assign
+            members.push assign
+          else
             assign.warn "not sure what this is; not generating"
             continue
-
-          methodName = assign.variable
-          fn = assign.value
-
-          if fn not instanceof Code
-            assign.warn "not sure what this is; not generating"
-            continue
-
-          fn.isMethod = yes
-          fn.fnName = methodName
-
-          answer = answer.concat flatten [
-            @makeCode (if node_index isnt 0 or assign_index isnt 0 then "\n\n" else '')
-            @makeCode "#{o.indent}"
-            fn.compileToFragments o
-          ]
-
       else
         node.warn "cannot be in class definition"
+
+    for assign, assign_index in members
+      answer.push @makeCode "\n\n" if assign_index isnt 0
+
+      if vname = atProperty assign.variable
+        isStatic = yes
+      else if vname = assign.variable.vanillaName()
+        isStatic = no
+      else
+        assign.warn "can't handle complex assignment in class body; not generating"
+        continue
+
+      if (fn = assign.value) instanceof Code
+        fn.isMethod = yes
+        fn.static = isStatic
+        fn.fnName = vname
+
+        answer = answer.concat flatten [
+          @makeCode "#{o.indent}#{if isStatic then "static " else ""}"
+          fn.compileToFragments o
+        ]
+
+      else
+        answer = answer.concat flatten [
+          @makeCode "#{o.indent}#{if isStatic then "static " else "public "}"
+          vname.compileToFragments o
+          @makeCode " = "
+          assign.value.compileToFragments o
+          @makeCode ";"
+        ]
 
     answer.push @makeCode "\n}"
     answer
@@ -1089,6 +1082,8 @@ exports.Assign = class Assign extends Base
       @variable.error "variable name may not be \"#{name}\""
 
   children: ['variable', 'value']
+
+  isVanilla: -> not @context? and (atProperty @variable or not @variable.isComplex())
 
   isStatement: (o) ->
     o?.level is LEVEL_TOP and @context? and "?" in @context
@@ -1246,12 +1241,6 @@ exports.Assign = class Assign extends Base
     if o.level > LEVEL_TOP then @wrapInBraces answer else answer
 
 #### Code
-
-atProperty = (expr) ->
-  if expr instanceof Value and expr.base.value is 'this' and expr.properties.length == 1
-    expr.properties[0].name
-  else
-    no
 
 # A function definition. This is the only node that creates a new Scope.
 # When for the purposes of walking the contents of a function body, the Code

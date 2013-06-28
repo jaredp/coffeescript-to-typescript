@@ -2,16 +2,23 @@
 [X] sourcemaped error support for coffee-typer (debugging blind at the moment)
 
 [X] class definitions
-  [X] assignment to property: static variable
+  [X] method: -> ...    --> method() { ... }
+  [X] member: value     --> public member = value
+  [X] @member: value    --> (public) static member = value
+  [X] @method: -> ...   --> static method() { ... }
+  [X] @member = value   --> static member = value
+  [X] @method = -> ...  --> static method() { ... }
   [X] warn on everything else
-  [ ] member: value     --> public member = value
-  [ ] @member: value    --> (public) static member = value
-  [ ] @method: -> ...   --> static method() { ... }
+
 [X] method definitions
   [X] constructors (CS&TS treat them the same, just make them normal mehtods)
   [X] `public` parameters for constructors
   [X] static methods
   [ ] `this` refers to the class object in static methods...?
+
+[ ] super (only calls current method on immediate super)
+  [ ] w/o arg: applies current args
+  [ ] consider static methods
 
 [X] function definitions
   [X] default parameters
@@ -36,10 +43,6 @@
 [ ] remove uses of _ref wherever possible
   [ ] existential operator [?]
   [ ] desugaring assignment [see CS docs]
-
-[ ] super (only calls current method on immediate super)
-  [ ] w/o arg: applies current args
-  [ ] consider static methods
 
 [-] :: (prototype extension...) this just happens, see what tsc has to say about it
 
