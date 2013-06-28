@@ -986,17 +986,6 @@ exports.Class = class Class extends Base
       @variable.error "class variable name may not be #{decl}"
     decl and= IDENTIFIER.test(decl) and decl
 
-  # For all `this`-references and bound functions in the class definition,
-  # `this` is the Class being constructed.
-  setContext: (name) ->
-    @body.traverseChildren false, (node) ->
-      return false if node.classBody
-      if node instanceof Literal and node.value is 'this'
-        node.value    = name
-      else if node instanceof Code
-        node.klass    = name
-        node.context  = name if node.bound
-
   # Ensure that all functions bound to the instance are proxied in the
   # constructor.
   addBoundFunctions: (o) ->

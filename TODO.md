@@ -14,7 +14,7 @@
   [X] constructors (CS&TS treat them the same, just make them normal mehtods)
   [X] `public` parameters for constructors
   [X] static methods
-  [ ] `this` refers to the class object in static methods...?
+  [X] `this` refers to the class object in static methods...?
 
 [ ] super (only calls current method on immediate super)
   [ ] w/o arg: applies current args
@@ -35,7 +35,7 @@
   [ ] arrays use: for value(, index) in array
   [ ] hashes use: for (own) key, value of dict
 
-[ ] do construct (should be annonymous function closure + invocation)
+[-] do construct (used 3 times in Palantir code base)
 [ ] in operator
   - should add Array.prototype.contains / Object.prototype.in, ask about polyfills
 
