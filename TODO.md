@@ -9,16 +9,16 @@
   [ ] @method: -> ...   --> static method() { ... }
 [X] method definitions
   [X] constructors (CS&TS treat them the same, just make them normal mehtods)
-  [ ] `public` parameters for constructors
+  [X] `public` parameters for constructors
   [X] static methods
   [ ] `this` refers to the class object in static methods...?
 
 [X] function definitions
-  [X] pull out if in Assign
-    - FIXME: remove extra semicolon after function definition
   [X] default parameters
   [-] overloads (not in CoffeeScript; code that uses parameters as different types will need to be rewritten)
-  [ ] varargs (splats -> spreads, args... -> ...args)
+  [X] varargs (splats -> spreads, args... -> ...args)
+  [X] pull out if in Assign
+    - FIXME: remove extra semicolon after function definition
 
 [ ] fat/thin arrow lambdas
   [ ] always use TS lambda on 'boundfunc', unless method (then what?)

@@ -472,6 +472,9 @@ exports.Value = class Value extends Base
   hasProperties: ->
     !!@properties.length
 
+  vanillaName: -> return @base unless @hasProperties()
+  isNamed: (name) -> not @hasProperties() and @base.value == name
+
   # Some boolean checks for the benefit of other nodes.
   isArray        : -> not @properties.length and @base instanceof Arr
   isComplex      : -> @hasProperties() or @base.isComplex()
@@ -1244,6 +1247,12 @@ exports.Assign = class Assign extends Base
 
 #### Code
 
+atProperty = (expr) ->
+  if expr instanceof Value and expr.base.value is 'this' and expr.properties.length == 1
+    expr.properties[0].name
+  else
+    no
+
 # A function definition. This is the only node that creates a new Scope.
 # When for the purposes of walking the contents of a function body, the Code
 # has no *children* -- they're within the inner scope.
@@ -1275,32 +1284,29 @@ exports.Code = class Code extends Base
     exprs  = []
     @eachParamName (name) -> # this step must be performed before the others
       unless o.scope.check name then o.scope.parameter name
-    for param in @params when param.splat
-      for {name: p} in @params
-        if p.this then p = p.properties[0].name
-        if p.value then o.scope.add p.value, 'var', yes
-      splats = new Assign new Value(new Arr(p.asReference o for p in @params)),
-                          new Value new Literal 'arguments'
-      break
     for param in @params
-      if param.isComplex()
+      if (member = atProperty param.name) and @fnName.isNamed 'constructor'
+        jsParam = [ @makeCode("public "), member.compileNode o ]
+      else unless param.isComplex()
+        jsParam = [ param.name.compileNode o ]
+      else
         val = ref = param.asReference o
         val = new Op '?', ref, param.value if param.value
         exprs.push new Assign new Value(param.name), val, '=', param: yes
-        params.push [ref.compileNode o]
-      else
-        params.push flatten [
-          if param.splat then @makeCode '...' else []
-          param.name.compileNode o
-          if param.value then [
-            @makeCode(" = ")
-            param.value.compileNode o
-          ] else []
-        ]
+        jsParam = [ ref.compileNode o ]
+
+      params.push flatten [
+        if param.splat then @makeCode '...' else []
+        jsParam
+        if param.value then [
+          @makeCode(" = ")
+          param.value.compileNode o
+        ] else []
+      ]
+
       o.scope.parameter fragmentsToText param
 
     wasEmpty = @body.isEmpty()
-    exprs.unshift splats if splats
     @body.expressions.unshift exprs... if exprs.length
     uniqs = []
     @eachParamName (name, node) ->
