@@ -580,6 +580,7 @@ exports.Call = class Call extends Base
   constructor: (variable, @args = [], @soak) ->
     @isNew    = false
     @isSuper  = variable is 'super'
+    @superKeyword = variable
     @variable = if @isSuper then null else variable
 
   children: ['variable', 'args']
@@ -596,14 +597,11 @@ exports.Call = class Call extends Base
   # Grab the reference to the superclass's implementation of the current
   # method.
   superReference: (o) ->
-    method = o.scope.namedMethod()
-    if method?.klass
-      accesses = [new Access(new Literal '__super__')]
-      accesses.push new Access new Literal 'constructor' if method.static
-      accesses.push new Access new Literal method.name
-      (new Value (new Literal method.klass), accesses).compile o
-    else if method?.ctor
-      "#{method.name}.__super__.constructor"
+    if method_name = o.scope.namedMethod()?.name
+      if method_name.value == 'constructor'
+        @superKeyword
+      else
+        new Value (new Literal @superKeyword), [new Access method_name]
     else
       @error 'cannot call super outside of an instance method.'
 
@@ -655,18 +653,13 @@ exports.Call = class Call extends Base
       if argIndex then compiledArgs.push @makeCode ", "
       compiledArgs.push (arg.compileToFragments o, LEVEL_LIST)...
 
-    fragments = []
-    if @isSuper
-      preface = @superReference(o) + ".call(#{@superThis(o)}"
-      if compiledArgs.length then preface += ", "
-      fragments.push @makeCode preface
-    else
-      if @isNew then fragments.push @makeCode 'new '
-      fragments.push @variable.compileToFragments(o, LEVEL_ACCESS)...
-      fragments.push @makeCode "("
-    fragments.push compiledArgs...
-    fragments.push @makeCode ")"
-    fragments
+    flatten [
+      if @isNew then @makeCode 'new ' else []
+      (if @isSuper then @superReference(o) else @variable).compileToFragments(o, LEVEL_ACCESS)
+      @makeCode "("
+      compiledArgs...
+      @makeCode ")"
+    ]
 
   # If you call a function with a splat, it's converted into a JavaScript
   # `.apply()` call to allow an array of arguments to be passed.
@@ -676,8 +669,12 @@ exports.Call = class Call extends Base
   # splatArgs is an array of CodeFragments to put into the 'apply'.
   compileSplat: (o, splatArgs) ->
     if @isSuper
+      ###
       return [].concat @makeCode("#{ @superReference o }.apply(#{@superThis(o)}, "),
         splatArgs, @makeCode(")")
+      ###
+      @warn "super call without arguments unimplemented; not generating"
+      return
 
     if @isNew
       idt = @tab + TAB
@@ -1057,7 +1054,8 @@ exports.Class = class Class extends Base
       if (fn = assign.value) instanceof Code
         fn.isMethod = yes
         fn.static = isStatic
-        fn.fnName = vname
+        fn.name = vname
+        fn.klass = this
 
         answer = answer.concat flatten [
           @makeCode "#{o.indent}#{if isStatic then "static " else ""}"
@@ -1111,7 +1109,7 @@ exports.Assign = class Assign extends Base
       return @compileSplice       o if @variable.isSplice()
       return @compileConditional  o if @context in ['||=', '&&=', '?=']
 
-    if @value instanceof Code and (@value.fnName = @variable.vanillaName())
+    if @value instanceof Code and (@value.name = @variable.vanillaName())
       if match = METHOD_DEF.exec name       # I'm actually not sure what we're doing here
         @value.klass = match[1] if match[1]
         @value.name  = match[2] ? match[3] ? match[4] ? match[5]
@@ -1258,7 +1256,7 @@ exports.Code = class Code extends Base
     @bound   = tag is 'boundfunc'
     @context = '_this' if @bound
 
-  # @fnName = Literal?
+  # @name = Literal?
 
   children: ['params', 'body']
 
@@ -1282,7 +1280,7 @@ exports.Code = class Code extends Base
     @eachParamName (name) -> # this step must be performed before the others
       unless o.scope.check name then o.scope.parameter name
     for param in @params
-      if (member = atProperty param.name) and @fnName.value == 'constructor'
+      if (member = atProperty param.name) and @name.value == 'constructor'
         jsParam = [ @makeCode("public "), member.compileNode o ]
       else unless param.isComplex()
         jsParam = [ param.name.compileNode o ]
@@ -1319,8 +1317,8 @@ exports.Code = class Code extends Base
 
     answer = flatten [
       if not @isMethod? then              @makeCode 'function'        else []
-      if @fnName? and not @isMethod then  @makeCode ' '               else []
-      if @fnName? then                    @fnName.compileNode o       else []
+      if @name? and not @isMethod then    @makeCode ' '               else []
+      if @name? then                      @name.compileNode o         else []
       @makeCode '('
       @joinFragmentArrays params, ', '
       @makeCode ') {'
