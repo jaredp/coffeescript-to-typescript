@@ -9,6 +9,8 @@
   [X] @member = value   --> static member = value
   [X] @method = -> ...  --> static method() { ... }
   [X] warn on everything else
+  [ ] allow bound methods
+  [X] allow block comments
 
 [X] method definitions
   [X] constructors (CS&TS treat them the same, just make them normal mehtods)
@@ -34,6 +36,8 @@
 [ ] for loop / comprehensions (.filter lam*, .map lam)
   [ ] arrays use: for value(, index) in array
   [ ] hashes use: for (own) key, value of dict
+
+[ ] there's something weird with multiline strings...? (It might just be in class bodies...)
 
 [-] do construct (used 3 times in Palantir code base)
 [ ] in operator

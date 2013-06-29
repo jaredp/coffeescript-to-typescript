@@ -6,4 +6,6 @@ This is done intentionally to force the code to move to idiomatic TypeScript, ra
 
 Many unnecessary return statements are generated.  These will typically be something like returning the results of a function that returns void, like `return console.log(...);`. In CoffeeScript, the last expression in a function is automatically returned, so in the generated code, a return is added at every last expression.  These, even where uncessessary or wrong-seeming, are 'correct,' and do not make the program wrong.  You should remove the extranious and wrong-looking ones as part of code clean up.
 
+Bound methods are `us.bind(method, this);` in the constructor.  Typescript methods are unbound, and while TypeScript's lambdas (arrow functions) are binding, they are not used for methods.  For now, we are using the mechanism CoffeeScript uses in the javascript it generates, which is manually binding the methods in the constructor.
+
 Actually, we may be generating ECMAScript6

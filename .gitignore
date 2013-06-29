@@ -9,3 +9,4 @@ examples/beautiful_code/parse.coffee
 *.gem
 /node_modules
 .DS_Store
+lib/

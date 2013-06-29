@@ -1015,6 +1015,7 @@ exports.Class = class Class extends Base
     members = []
     addMember = (assign)=>
       members.push assign
+      return if assign instanceof Comment
       if assign.variable.isNamed "constructor"
         @ctor = assign.value
       if assign.value instanceof Code and assign.value.bound
@@ -1031,6 +1032,8 @@ exports.Class = class Class extends Base
           else
             assign.warn "not sure what this is; not generating"
             continue
+      else if node instanceof Comment
+        addMember node
       else
         node.warn "cannot be in class definition; not generating"
 
@@ -1038,6 +1041,10 @@ exports.Class = class Class extends Base
 
     for assign, assign_index in members
       answer.push @makeCode "\n\n" if assign_index isnt 0
+
+      if assign instanceof Comment
+        answer.push (assign.compileToFragments o)...
+        continue
 
       if vname = atProperty assign.variable
         isStatic = yes
