@@ -1037,7 +1037,7 @@ exports.Class = class Class extends Base
       else
         node.warn "cannot be in class definition; not generating"
 
-    @addBoundFunctions()
+    @addBoundFunctions o
 
     for assign, assign_index in members
       answer.push @makeCode "\n\n" if assign_index isnt 0
