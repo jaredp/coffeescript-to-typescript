@@ -393,9 +393,7 @@ exports.Literal = class Literal extends Base
     return this if @value is 'continue' and not o?.loop
 
   compileNode: (o) ->
-    code = if @value is 'this'
-      if o.scope.method?.bound then o.scope.method.context else @value
-    else if @value.reserved
+    code = if @value.reserved
       "\"#{@value}\""
     else
       @value
@@ -604,11 +602,6 @@ exports.Call = class Call extends Base
     else
       @error 'cannot call super outside of an instance method.'
 
-  # The appropriate `this` value for a `super` call.
-  superThis : (o) ->
-    method = o.scope.method
-    (method and not method.klass and method.context) or "this"
-
   # Soaked chained invocations unfold into if/else ternary structures.
   unfoldSoak: (o) ->
     if @soak
@@ -668,10 +661,6 @@ exports.Call = class Call extends Base
   # splatArgs is an array of CodeFragments to put into the 'apply'.
   compileSplat: (o, splatArgs) ->
     if @isSuper
-      ###
-      return [].concat @makeCode("#{ @superReference o }.apply(#{@superThis(o)}, "),
-        splatArgs, @makeCode(")")
-      ###
       @warn "super call without arguments unimplemented; not generating"
       return []
 
@@ -1101,8 +1090,8 @@ exports.Assign = class Assign extends Base
       return @compileSplice       o if @variable.isSplice()
       return @compileConditional  o if @context in ['||=', '&&=', '?=']
 
-    if @value instanceof Code and (vanillaName = @variable.vanillaName())
-      @value.name = vanillaName
+    if @value instanceof Code and not @value.bound and @variable.vanillaName()
+      @value.name = @variable.vanillaName()
       return @value.compileToFragments o
 
     compiledName = @variable.compileToFragments o, LEVEL_LIST
@@ -1243,9 +1232,8 @@ exports.Code = class Code extends Base
     @params  = params or []
     @body    = body or new Block
     @bound   = tag is 'boundfunc'
-    @context = '_this' if @bound
 
-  # @name = Literal?
+  # @name :: Literal?
 
   children: ['params', 'body']
 
@@ -1297,20 +1285,16 @@ exports.Code = class Code extends Base
       node.error "multiple parameters named '#{name}'" if name in uniqs
       uniqs.push name
     @body.makeReturn() unless wasEmpty or @noReturn
-    if @bound
-      if o.scope.parent.method?.bound
-        @bound = @context = o.scope.parent.method.context
-      else if not @static
-        o.scope.parent.assign '_this', 'this'
     idt   = o.indent
 
-    answer = flatten [
-      if not @isMethod? then              @makeCode 'function'        else []
-      if @name? and not @isMethod then    @makeCode ' '               else []
-      if @name? then                      @name.compileNode o         else []
+    argscode = [
       @makeCode '('
       @joinFragmentArrays params, ', '
-      @makeCode ') {'
+      @makeCode ')'
+    ]
+
+    bodycode = [
+      @makeCode '{'
       unless @body.isEmpty() then [
         @makeCode("\n")
         @body.compileWithDeclarations(o)
@@ -1318,6 +1302,20 @@ exports.Code = class Code extends Base
       ] else []
       @makeCode '}'
     ]
+
+    answer = flatten (
+      if @isMethod
+        [@name.compileNode(o), argscode, bodycode]
+      else if @name? and not @bound
+        [@makeCode('function '), @name.compileNode(o), argscode, bodycode]
+      else if not @bound
+        [@makeCode('function'), argscode, bodycode]
+      else if @bound and not @name?
+        [argscode, @makeCode(' => '), bodycode]
+      else if @bound and @name?
+        @warn "bound non-method function has a name (internal compiler error); not generating"
+        []
+    )
 
     if @front or (o.level >= LEVEL_ACCESS) then @wrapInBraces answer else answer
 
