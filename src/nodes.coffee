@@ -597,7 +597,7 @@ exports.Call = class Call extends Base
     method = o.scope.namedMethod()
     @error 'cannot call super outside of an instance method.' if not method.isMethod
 
-    if method.name.value == 'constructor'
+    if method.isConstructor
       new Literal 'super'
     else
       supes = new Literal 'super'                               unless method.static
@@ -1008,6 +1008,7 @@ exports.Class = class Class extends Base
       if (assign = member) instanceof Assign
         if assign.variable.isNamed "constructor"
           @ctor = assign.value
+          @ctor.isConstructor = yes
         else if assign.value instanceof Code and assign.value.bound
           @boundFuncs.push assign.variable
           assign.value.bound = no
@@ -1037,7 +1038,7 @@ exports.Class = class Class extends Base
         continue
 
       static_flag = if isStatic                           then "static "    else ""
-      public_flag = unless vname.value == "constructor"   then "public "    else ""
+      public_flag = unless assign.value.isConstructor     then "public "    else ""
       answer.push @makeCode "#{o.indent}#{public_flag}#{static_flag}"
 
       if (fn = assign.value) instanceof Code
@@ -1263,7 +1264,7 @@ exports.Code = class Code extends Base
     @eachParamName (name) -> # this step must be performed before the others
       unless o.scope.check name then o.scope.parameter name
     for param in @params
-      if (member = atProperty param.name) and @name.value == 'constructor'
+      if (member = atProperty param.name) and @isConstructor
         jsParam = [ @makeCode("public "), member.compileNode o ]
       else unless param.isComplex()
         jsParam = [ param.name.compileNode o ]
@@ -1290,7 +1291,7 @@ exports.Code = class Code extends Base
     @eachParamName (name, node) ->
       node.error "multiple parameters named '#{name}'" if name in uniqs
       uniqs.push name
-    @body.makeReturn() unless wasEmpty or @noReturn
+    @body.makeReturn() unless wasEmpty or @noReturn or @isConstructor
     idt   = o.indent
 
     argscode = [
