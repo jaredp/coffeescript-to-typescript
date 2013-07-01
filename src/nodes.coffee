@@ -674,7 +674,7 @@ exports.Call = class Call extends Base
         splatArgs, @makeCode(")")
       ###
       @warn "super call without arguments unimplemented; not generating"
-      return
+      return []
 
     if @isNew
       idt = @tab + TAB
@@ -1010,29 +1010,21 @@ exports.Class = class Class extends Base
     o.indent += TAB
 
     members = []
-    addMember = (assign)=>
-      members.push assign
-      return if assign instanceof Comment
-      if assign.variable.isNamed "constructor"
-        @ctor = assign.value
-      if assign.value instanceof Code and assign.value.bound
-        @boundFuncs.push assign.variable
-        assign.value.bound = no
+    addMember = (member)=>
+      members.push member
+      if (assign = member) instanceof Assign
+        if assign.variable.isNamed "constructor"
+          @ctor = assign.value
+        else if assign.value instanceof Code and assign.value.bound
+          @boundFuncs.push assign.variable
+          assign.value.bound = no
 
     for node in @body.expressions
-      if node instanceof Assign
-        addMember node
-      else if node instanceof Value and node.base instanceof Object
+      if node instanceof Value and node.base instanceof Object
         for assign in node.base.properties
-          if assign instanceof Assign
-            addMember assign
-          else
-            assign.warn "not sure what this is; not generating"
-            continue
-      else if node instanceof Comment
-        addMember node
+          addMember assign
       else
-        node.warn "cannot be in class definition; not generating"
+        addMember node
 
     @addBoundFunctions o
 
@@ -1109,11 +1101,8 @@ exports.Assign = class Assign extends Base
       return @compileSplice       o if @variable.isSplice()
       return @compileConditional  o if @context in ['||=', '&&=', '?=']
 
-    if @value instanceof Code and (@value.name = @variable.vanillaName())
-      if match = METHOD_DEF.exec name       # I'm actually not sure what we're doing here
-        @value.klass = match[1] if match[1]
-        @value.name  = match[2] ? match[3] ? match[4] ? match[5]
-
+    if @value instanceof Code and (vanillaName = @variable.vanillaName())
+      @value.name = vanillaName
       return @value.compileToFragments o
 
     compiledName = @variable.compileToFragments o, LEVEL_LIST
