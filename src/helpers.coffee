@@ -160,6 +160,14 @@ exports.sendSyntaxWarning = (message, location) ->
   error.location = location
   console.log (exports.prettyErrorMessage error, translating_filename, translating_code, true, "warning")
 
+exports.sendNotGeneratingWarning = (message, location) ->
+  location.last_line ?= location.first_line
+  location.last_column ?= location.first_column
+  error = new SyntaxError message
+  error.location = location
+  console.log (exports.prettyErrorMessage error, translating_filename, translating_code, true, "not generating")
+  []
+
 # Creates a nice error message like, following the "standard" format
 # <filename>:<line>:<col>: <message> plus the line with the error and a marker
 # showing where the error is.

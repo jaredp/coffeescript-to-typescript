@@ -56,7 +56,7 @@
 [-] :: (prototype extension...) this just happens, see what tsc has to say about it
 
 [X] @warn: log message, line of code, line numbers
-[ ] @nogen
+[X] @nogen
 
 [-] do construct (only used 3 times in Palantir code base)
 

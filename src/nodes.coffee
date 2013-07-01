@@ -10,7 +10,8 @@ Error.stackTraceLimit = Infinity
 
 # Import the helpers we plan to use.
 {compact, flatten, extend, merge, del, starts, ends, last, some,
-addLocationDataFn, locationDataToString, throwSyntaxError, sendSyntaxWarning} = require './helpers'
+addLocationDataFn, locationDataToString,
+throwSyntaxError, sendSyntaxWarning, sendNotGeneratingWarning} = require './helpers'
 
 # Functions required by parser
 exports.extend = extend
@@ -188,6 +189,9 @@ exports.Base = class Base
 
   warn: (message) ->
     sendSyntaxWarning message, @locationData
+
+  nogen: (message) ->
+    sendNotGeneratingWarning message, @locationData
 
   makeCode: (code) ->
     new CodeFragment this, code
@@ -665,8 +669,7 @@ exports.Call = class Call extends Base
   # splatArgs is an array of CodeFragments to put into the 'apply'.
   compileSplat: (o, splatArgs) ->
     if @isSuper
-      @warn "super call without arguments unimplemented; not generating"
-      return []
+      return @nogen "super call without arguments unimplemented"
 
     if @isNew
       idt = @tab + TAB
@@ -979,8 +982,8 @@ exports.Class = class Class extends Base
   # constructor.
   addBoundFunctions: (o) ->
     if @boundFuncs.length > 0 and not @ctor?
-      @warn "needs ctor in order to bind functions"
-      return
+      return @nogen "needs ctor in order to bind functions"
+
     for bvar in @boundFuncs
       lhs = (new Value (new Literal "this"), [new Access bvar]).compile o
       @ctor.body.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
@@ -1034,7 +1037,7 @@ exports.Class = class Class extends Base
       else if vname = assign.variable.vanillaName()
         isStatic = no
       else
-        assign.warn "can't handle complex assignment in class body; not generating"
+        assign.nogen "can't handle complex assignment in class body"
         continue
 
       static_flag = if isStatic                           then "static "    else ""
@@ -1320,8 +1323,7 @@ exports.Code = class Code extends Base
       else if @bound and not @name?
         [argscode, @makeCode(' => '), bodycode]
       else if @bound and @name?
-        @warn "bound non-method function has a name (internal compiler error); not generating"
-        []
+        @nogen "bound non-method function has a name (internal compiler error)"
     )
 
     if @front or (o.level >= LEVEL_ACCESS) then @wrapInBraces answer else answer
