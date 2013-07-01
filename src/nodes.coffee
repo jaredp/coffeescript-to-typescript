@@ -594,13 +594,17 @@ exports.Call = class Call extends Base
   # Grab the reference to the superclass's implementation of the current
   # method.
   superReference: (o) ->
-    if method_name = o.scope.namedMethod()?.name
-      if method_name.value == 'constructor'
-        new Literal 'super'
-      else
-        new Value (new Literal 'super'), [new Access method_name]
+    method = o.scope.namedMethod()
+    @error 'cannot call super outside of an instance method.' if not method.isMethod
+
+    if method.name.value == 'constructor'
+      new Literal 'super'
     else
-      @error 'cannot call super outside of an instance method.'
+      supes = new Literal 'super'                               unless method.static
+      supes = method.klass.parent                               if method.static
+      @error 'calling super in a class that has no superclass'  unless supes
+      new Value supes, [new Access method.name]
+
 
   # Soaked chained invocations unfold into if/else ternary structures.
   unfoldSoak: (o) ->
@@ -1020,7 +1024,7 @@ exports.Class = class Class extends Base
     for assign, assign_index in members
       answer.push @makeCode "\n\n" if assign_index isnt 0
 
-      if assign instanceof Comment
+      if assign not instanceof Assign
         answer.push (assign.compileToFragments o)...
         continue
 
@@ -1032,6 +1036,10 @@ exports.Class = class Class extends Base
         assign.warn "can't handle complex assignment in class body; not generating"
         continue
 
+      static_flag = if isStatic                           then "static "    else ""
+      public_flag = unless vname.value == "constructor"   then "public "    else ""
+      answer.push @makeCode "#{o.indent}#{public_flag}#{static_flag}"
+
       if (fn = assign.value) instanceof Code
         fn.isMethod = yes
         fn.static = isStatic
@@ -1039,13 +1047,11 @@ exports.Class = class Class extends Base
         fn.klass = this
 
         answer = answer.concat flatten [
-          @makeCode "#{o.indent}#{if isStatic then "static " else ""}"
-          fn.compileToFragments o
+          fn.compileToFragments(o)
         ]
 
       else
         answer = answer.concat flatten [
-          @makeCode "#{o.indent}#{if isStatic then "static " else "public "}"
           vname.compileToFragments o
           @makeCode " = "
           assign.value.compileToFragments o

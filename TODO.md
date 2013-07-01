@@ -12,6 +12,7 @@
   [X] allow bound methods
   [X] allow block comments
   [ ] remove `return`s in constructor
+  [ ] explicit `public` on methods, static variables
 
 [X] method definitions
   [X] constructors (CS&TS treat them the same, just make them normal mehtods)
@@ -21,7 +22,7 @@
 
 [X] super (only calls current method on immediate super)
   [-] w/o arg: applies current args (not used in palantir codebase)
-  [ ] consider static methods
+  [X] super in static methods work... but they shouldn't
 
 [X] function definitions
   [X] default parameters
