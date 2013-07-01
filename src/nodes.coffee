@@ -580,7 +580,6 @@ exports.Call = class Call extends Base
   constructor: (variable, @args = [], @soak) ->
     @isNew    = false
     @isSuper  = variable is 'super'
-    @superKeyword = variable
     @variable = if @isSuper then null else variable
 
   children: ['variable', 'args']
@@ -599,9 +598,9 @@ exports.Call = class Call extends Base
   superReference: (o) ->
     if method_name = o.scope.namedMethod()?.name
       if method_name.value == 'constructor'
-        @superKeyword
+        new Literal 'super'
       else
-        new Value (new Literal @superKeyword), [new Access method_name]
+        new Value (new Literal 'super'), [new Access method_name]
     else
       @error 'cannot call super outside of an instance method.'
 
@@ -986,11 +985,12 @@ exports.Class = class Class extends Base
   # Ensure that all functions bound to the instance are proxied in the
   # constructor.
   addBoundFunctions: (o) ->
-    #FIXME: create ctor if none exists
+    if @boundFuncs.length > 0 and not @ctor?
+      @warn "needs ctor in order to bind functions"
+      return
     for bvar in @boundFuncs
       lhs = (new Value (new Literal "this"), [new Access bvar]).compile o
       @ctor.body.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
-    return
 
   # Instead of generating the JavaScript string directly, we build up the
   # equivalent syntax tree and compile that, in pieces. You can see the

@@ -29,6 +29,8 @@
   [X] pull out if in Assign
     - FIXME: remove extra semicolon after function definition
 
+[ ] splats in function calls
+
 [ ] fat/thin arrow lambdas
   [ ] always use TS lambda on 'boundfunc', unless method (then what?)
   [ ] use TS lambda only on fat arrow, or where `this` is not used
