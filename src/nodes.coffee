@@ -1025,8 +1025,10 @@ exports.Class = class Class extends Base
     decl  = @determineName()
     name  = decl or '_Class'
     name = "_#{name}" if name.reserved
+    indent = "#{o.indent}"
 
     answer = flatten [
+      @makeCode indent
       @makeCode "class #{name}"
       if @parent then [@makeCode( " extends "), @parent.compileToFragments o] else []
       @makeCode " {\n"
@@ -1072,7 +1074,7 @@ exports.Class = class Class extends Base
           @makeCode ";"
         ]
 
-    answer.push @makeCode "\n}"
+    answer.push @makeCode("\n#{indent}}")
     answer
 
 #### Assign
@@ -1091,7 +1093,7 @@ exports.Assign = class Assign extends Base
 
   isVanilla: -> not @context? and (atProperty @variable or not @variable.isComplex())
 
-  isCodeDef: -> @value instanceof Code and not @value.bound and @variable.vanillaName()
+  isCodeDef: -> @value instanceof Code and not @value.bound and @variable.vanillaName() and not @context
 
   isStatement: (o) ->
     (o?.level is LEVEL_TOP and @context? and "?" in @context) or @isCodeDef()
@@ -1330,9 +1332,9 @@ exports.Code = class Code extends Base
       if @isMethod
         [@name.compileNode(o), argscode, bodycode]
       else if @name? and not @bound
-        [@makeCode('function '), @name.compileNode(o), argscode, bodycode]
+        [@makeCode("#{@tab}function "), @name.compileNode(o), argscode, bodycode]
       else if not @bound
-        [@makeCode('function'), argscode, bodycode]
+        [@makeCode("function"), argscode, bodycode]
       else if @bound and not @name?
         if @body.expressions.length == 1 and @body.expressions[0] instanceof Return
           bodycode = @body.expressions[0].expression.compileNode o
