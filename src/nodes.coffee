@@ -967,6 +967,8 @@ exports.Class = class Class extends Base
 
   children: ['variable', 'parent', 'body']
 
+  isStatement: YES
+
   # Figure out the appropriate name for the constructor function of this class.
   determineName: ->
     return null unless @variable
@@ -1081,8 +1083,10 @@ exports.Assign = class Assign extends Base
 
   isVanilla: -> not @context? and (atProperty @variable or not @variable.isComplex())
 
+  isCodeDef: -> @value instanceof Code and not @value.bound and @variable.vanillaName()
+
   isStatement: (o) ->
-    o?.level is LEVEL_TOP and @context? and "?" in @context
+    (o?.level is LEVEL_TOP and @context? and "?" in @context) or @isCodeDef()
 
   assigns: (name) ->
     @[if @context is 'object' then 'value' else 'variable'].assigns name
@@ -1100,7 +1104,7 @@ exports.Assign = class Assign extends Base
       return @compileSplice       o if @variable.isSplice()
       return @compileConditional  o if @context in ['||=', '&&=', '?=']
 
-    if @value instanceof Code and not @value.bound and @variable.vanillaName()
+    if @isCodeDef()
       @value.name = @variable.vanillaName()
       return @value.compileToFragments o
 
@@ -1247,7 +1251,8 @@ exports.Code = class Code extends Base
 
   children: ['params', 'body']
 
-  isStatement: -> !!@ctor
+  # FIXME: When the following line is on, sometimes RangeError: Maximum call stack size exceeded
+  #isStatement: YES
 
   jumps: NO
 
