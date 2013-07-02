@@ -1807,6 +1807,11 @@ exports.Parens = class Parens extends Base
 # Unlike Python array comprehensions, they can be multi-line, and you can pass
 # the current index of the loop as a second parameter. Unlike Ruby blocks,
 # you can map and filter in a single pass.
+
+printStack = ->
+  e = new SyntaxError
+  console.log e.stack
+
 exports.For = class For extends While
   constructor: (body, source) ->
     {@source, @guard, @step, @name, @index} = source
@@ -1824,6 +1829,10 @@ exports.For = class For extends While
 
   children: ['body', 'source', 'guard', 'step']
 
+  # It's an expression if we're going to use the ES5 .filter(), .map(), or .forEach()
+  # FIXME: allow @patterns
+  isStatement: -> !(not @index and not @object and not @pattern and not @step)
+
   # Welcome to the hairiest method in all of CoffeeScript. Handles the inner
   # loop, filtering, stepping, and result saving for array, object, and range
   # comprehensions. Some of the generated code can be shared in common, and
@@ -1835,6 +1844,18 @@ exports.For = class For extends While
     source    = if @range then @source.base else @source
     scope     = o.scope
     name      = @name  and (@name.compile o, LEVEL_LIST)
+
+    #TODO: add pattern unwrapping
+    if not @index and not @object and not @pattern and not @step
+      mkLam = (exprs) => new Code [new Param @name], exprs, 'boundfunc'
+      mkMCall = (obj, meth, args) => new Call(new Value(obj, [new Access new Literal meth]), args)
+      returns = o.level > LEVEL_TOP   # slightly hackish
+
+      comprehension = source
+      comprehension = mkMCall comprehension, "filter", [mkLam Block.wrap [new Return @guard]] if @guard
+      comprehension = mkMCall comprehension, (if returns then "map" else "forEach"), [mkLam @body]
+      return comprehension.compileNode o
+
     index     = @index and (@index.compile o, LEVEL_LIST)
     scope.find(name)  if name and not @pattern
     scope.find(index) if index

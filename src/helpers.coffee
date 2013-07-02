@@ -154,17 +154,19 @@ exports.setTranslatingFile = (fname, code) ->
   translating_code = code || fs.readFileSync(translating_filename, 'utf8')
 
 exports.sendSyntaxWarning = (message, location) ->
-  location.last_line ?= location.first_line
-  location.last_column ?= location.first_column
   error = new SyntaxError message
-  error.location = location
+  if location
+    location.last_line ?= location.first_line
+    location.last_column ?= location.first_column
+    error.location = location
   console.log (exports.prettyErrorMessage error, translating_filename, translating_code, true, "warning")
 
 exports.sendNotGeneratingWarning = (message, location) ->
-  location.last_line ?= location.first_line
-  location.last_column ?= location.first_column
   error = new SyntaxError message
-  error.location = location
+  if location
+    location.last_line ?= location.first_line
+    location.last_column ?= location.first_column
+    error.location = location
   console.log (exports.prettyErrorMessage error, translating_filename, translating_code, true, "not generating")
   []
 
