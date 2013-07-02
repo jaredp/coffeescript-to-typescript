@@ -1321,6 +1321,8 @@ exports.Code = class Code extends Base
       else if not @bound
         [@makeCode('function'), argscode, bodycode]
       else if @bound and not @name?
+        if @body.expressions.length == 1 and @body.expressions[0] instanceof Return
+          bodycode = @body.expressions[0].expression.compileNode o
         [argscode, @makeCode(' => '), bodycode]
       else if @bound and @name?
         @nogen "bound non-method function has a name (internal compiler error)"
