@@ -323,7 +323,7 @@ compileOptions = (filename, base) ->
     filename
     literate: opts.literate or helpers.isLiterate(filename)
     bare: opts.bare
-    header: opts.compile
+    header: false
     sourceMap: opts.map
   }
   if filename
