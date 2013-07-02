@@ -74,5 +74,5 @@
 [ ] investigate crash of `reAddComments ../samples/c.map`
 [ ] investigate RangeError: Maximum call stack size exceeded
 [ ] bin/coffee should print stack trace on internal exception
-[ ] bin/coffee should skip to compiling the next file on exception from the current one
+[X] bin/coffee should skip to compiling the next file on exception from the current one
 

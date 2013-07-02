@@ -10,7 +10,7 @@ Error.stackTraceLimit = Infinity
 
 # Import the helpers we plan to use.
 {compact, flatten, extend, merge, del, starts, ends, last, some,
-addLocationDataFn, locationDataToString,
+addLocationDataFn, locationDataToString, printStack
 throwSyntaxError, sendSyntaxWarning, sendNotGeneratingWarning} = require './helpers'
 
 # Functions required by parser
@@ -1814,10 +1814,6 @@ exports.Parens = class Parens extends Base
 # Unlike Python array comprehensions, they can be multi-line, and you can pass
 # the current index of the loop as a second parameter. Unlike Ruby blocks,
 # you can map and filter in a single pass.
-
-printStack = ->
-  e = new SyntaxError
-  console.log e.stack
 
 exports.For = class For extends While
   constructor: (body, source) ->

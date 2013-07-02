@@ -62,6 +62,15 @@ notSources   = {}
 watchers     = {}
 optionParser = null
 
+failedFiles = []
+runningFiles = []
+setRunningFiles = (files) ->
+  runningFiles.push files...
+fileFinished = (file) ->
+  runningFiles.splice(runningFiles.indexOf(file), 1)
+  onCompilationFinished() if runningFiles.length == 0
+onCompilationFinished = -> return
+
 # Run `coffee` by parsing passed options and determining what action to take.
 # Many flags cause us to divert before compiling anything. Flags passed after
 # `--` will be passed verbatim to your script as arguments in `process.argv`
@@ -79,6 +88,9 @@ exports.run = ->
   literals = if opts.run then sources.splice 1 else []
   process.argv = process.argv[0..1].concat literals
   process.argv[0] = 'coffee'
+  onCompilationFinished = ->
+    printLine "#{failedFiles.length} files failed" if failedFiles.length
+  runningFiles.push sources...
   for source in sources
     compilePath source, yes, path.normalize source
 
@@ -150,8 +162,12 @@ compileScript = (file, input, base=null) ->
     if o.watch
       printLine message + '\x07'
     else
+      printWarn "error compiling #{file}"
       printWarn message
-      process.exit 1
+      failedFiles.push file
+      #process.exit 1
+  fileFinished file
+
 
 # Attach the appropriate listeners to compile scripts incoming over **stdin**,
 # and write them back to **stdout**.

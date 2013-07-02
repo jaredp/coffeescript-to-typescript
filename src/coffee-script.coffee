@@ -163,7 +163,8 @@ compileFile = (filename, sourceMap) ->
     # information to error so it can be pretty-printed later.
     err.filename = filename
     err.code = stripped
-    throw err
+    helpers.prettyErrorMessage error, filename, stripped, yes
+    answer = ""
 
   answer
 

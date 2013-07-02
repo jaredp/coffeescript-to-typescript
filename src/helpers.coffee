@@ -202,3 +202,7 @@ exports.prettyErrorMessage = (error, filename, code, useColors, errorOrWarn="err
   #message += "\n#{error.stack}"
 
   message
+
+
+exports.printStack = ->
+  console.log new Error().stack
