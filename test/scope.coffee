@@ -42,13 +42,11 @@ test "#1973: redefining Array/Object constructors shouldn't confuse __X helpers"
   for own k of obj
     eq arr, obj[k]
 
-arrayEq [0], ((@x...) -> @x).call {}, 0
-
-###
 test "#2255: global leak with splatted @-params", ->
   ok not x?
   arrayEq [0], ((@x...) -> @x).call {}, 0
   ok not x?
+
 test "#1183: super + fat arrows", ->
   dolater = (cb) -> cb()
 
@@ -106,4 +104,3 @@ test "#2331: bound super regression", ->
     method: => super
 
   eq (new B).method(), 'A'
-###

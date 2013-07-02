@@ -1290,7 +1290,7 @@ exports.Code = class Code extends Base
         val = ref = param.asReference o
         val = new Op '?', ref, param.value if param.value
         exprs.push new Assign new Value(param.name), val, '=', param: yes
-        jsParam = [ ref.compileNode o ]
+        jsParam = [ ref.compileToFragments o ]
 
       params.push flatten [
         if param.splat then @makeCode '...' else []
