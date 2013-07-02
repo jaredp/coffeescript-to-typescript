@@ -962,7 +962,6 @@ exports.Arr = class Arr extends Base
 # list of prototype property assignments.
 exports.Class = class Class extends Base
   constructor: (@variable, @parent, @body = new Block) ->
-    @boundFuncs = []
     @body.classBody = yes
 
   children: ['variable', 'parent', 'body']
@@ -980,15 +979,44 @@ exports.Class = class Class extends Base
       @variable.error "class variable name may not be #{decl}"
     decl and= IDENTIFIER.test(decl) and decl
 
-  # Ensure that all functions bound to the instance are proxied in the
-  # constructor.
-  addBoundFunctions: (o) ->
-    if @boundFuncs.length > 0 and not @ctor?
-      return @nogen "needs ctor in order to bind functions"
+  getMembers: (o) ->
+    members = []
+    boundFuncs = []
+    ctor = null
+    addBoundFunctions: (o) ->
 
-    for bvar in @boundFuncs
+    addMember = (member)->
+      members.push member
+      if (assign = member) instanceof Assign
+        if assign.variable.isNamed "constructor"
+          ctor = assign.value
+          ctor.isConstructor = yes
+        else if assign.value instanceof Code and assign.value.bound
+          boundFuncs.push assign.variable
+          assign.value.bound = no
+
+    for node in @body.expressions
+      if node instanceof Value and node.base instanceof Object
+        for assign in node.base.properties
+          addMember assign
+      else
+        addMember node
+
+    # add constructor if there isn't one and it's needed to bind functions
+    if boundFuncs.length > 0 and not ctor
+      ctor = new Code([], new Block(
+        if @parent then [new Call('super', [])]
+        else []
+      ), 'func')
+      ctor.isConstructor = yes
+      members.unshift new Assign(new Value(new Literal("constructor")), ctor)
+
+    # bind members
+    for bvar in boundFuncs
       lhs = (new Value (new Literal "this"), [new Access bvar]).compile o
-      @ctor.body.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
+      ctor.body.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
+
+    members
 
   # Instead of generating the JavaScript string directly, we build up the
   # equivalent syntax tree and compile that, in pieces. You can see the
@@ -1007,27 +1035,7 @@ exports.Class = class Class extends Base
     @body.spaced = yes
     o.indent += TAB
 
-    members = []
-    addMember = (member)=>
-      members.push member
-      if (assign = member) instanceof Assign
-        if assign.variable.isNamed "constructor"
-          @ctor = assign.value
-          @ctor.isConstructor = yes
-        else if assign.value instanceof Code and assign.value.bound
-          @boundFuncs.push assign.variable
-          assign.value.bound = no
-
-    for node in @body.expressions
-      if node instanceof Value and node.base instanceof Object
-        for assign in node.base.properties
-          addMember assign
-      else
-        addMember node
-
-    @addBoundFunctions o
-
-    for assign, assign_index in members
+    for assign, assign_index in @getMembers(o)
       answer.push @makeCode "\n\n" if assign_index isnt 0
 
       if assign not instanceof Assign

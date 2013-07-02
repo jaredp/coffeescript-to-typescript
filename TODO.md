@@ -13,6 +13,7 @@
   [X] allow block comments
   [X] remove `return`s in constructor
   [X] explicit `public` on methods, static variables
+  [X] add constructor generation where needed for bound methods
 
 [X] method definitions
   [X] constructors (CS&TS treat them the same, just make them normal mehtods)
