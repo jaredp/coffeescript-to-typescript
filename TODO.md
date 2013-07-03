@@ -22,7 +22,7 @@
   [X] `this` refers to the class object in static methods...?
 
 [X] super (only calls current method on immediate super)
-  [-] w/o arg: applies current args (not used in palantir codebase)
+  [-] w/o arg: applies current args (not used in target codebase)
   [X] super in static methods work... but they shouldn't
 
 [X] function definitions
@@ -33,14 +33,14 @@
 
 [X] fat/thin arrow lambdas
   [X] always use TS lambda on bound functions
-  [-] use TS lambda where `this` is not used  (too much work vs using regular anon-funcs)
+  [-] use TS lambda where `this` is not used    (too much work vs using regular anon-funcs)
   [X] `() => {return exp;}`  --> `() => exp`    (on single expressions)
 
 [X] for loop / comprehensions
   [X] .filter()                   where there is a guard
   [X] .map()                      where results matter
   [X] .forEach()                  where results don't matter
-  [ ] unbox elements in lambdas   where pattern matching is used
+  [-] unbox elements in lambdas   where pattern matching is used  (used 8 times in target codebase)
   [X] use default generation      where for elem, index in list
   [X] use default generation      where for key, val of object
   [X] use default generation      where for elem(, index) in list by step
@@ -65,7 +65,7 @@
 [X] @nogen
   [ ] return commented out coffeescript code
 
-[-] do construct (only used 3 times in Palantir code base)
+[-] do construct (only used 3 times in target code base)
 
 [ ] TypeScript requrires members to be declared
   [ ] read tsc's errors to find undeclared members... maybe this should be a separate tool...

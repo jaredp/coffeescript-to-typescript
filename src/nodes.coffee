@@ -1843,8 +1843,7 @@ exports.For = class For extends While
   children: ['body', 'source', 'guard', 'step']
 
   # It's an expression if we're going to use the ES5 .filter(), .map(), or .forEach()
-  # FIXME: allow @patterns
-  isStatement: -> !(not @index and not @object and not @pattern and not @step)
+  isStatement: -> !(not @index and not @object and not @step and not @pattern)
 
   # Welcome to the hairiest method in all of CoffeeScript. Handles the inner
   # loop, filtering, stepping, and result saving for array, object, and range
@@ -1858,8 +1857,7 @@ exports.For = class For extends While
     scope     = o.scope
     name      = @name  and (@name.compile o, LEVEL_LIST)
 
-    #TODO: add pattern unwrapping
-    if not @index and not @object and not @pattern and not @step
+    if not @index and not @object and not @step and not @pattern
       mkLam = (exprs) => new Code [new Param @name], exprs, 'boundfunc'
       mkMCall = (obj, meth, args) => new Call(new Value(obj, [new Access new Literal meth]), args)
       returns = o.level > LEVEL_TOP   # slightly hackish
