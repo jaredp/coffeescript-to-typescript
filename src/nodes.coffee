@@ -344,9 +344,14 @@ exports.Block = class Block extends Base
       requires = for [iport, nameParam] in underscore.zip(importList.objects, bodyFunc.params)
         "import #{nameParam.name.compile o} = require(#{iport.compile o})"
 
-      bodyFunc.body.expressions.unshift new Literal requires.join ";\n"
+      bodyExprs = bodyFunc.body.expressions
+      bodyExprs.unshift new Literal requires.join ";\n"
 
-      @expressions[node_i] = bodyFunc.body.expressions
+      eport = bodyExprs.pop()
+      console.log eport
+      bodyExprs.push new Literal "export = #{eport.compile o}"
+
+      @expressions[node_i] = bodyExprs
     @expressions = flatten @expressions
 
     fragments = @compileWithDeclarations o

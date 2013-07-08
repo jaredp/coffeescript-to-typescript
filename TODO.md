@@ -47,7 +47,7 @@
 
 [ ] modules
   [X] imports
-  [ ] export =
+  [X] export =
   [ ] smart exports
 
 [ ] make utils stdlib things, us.bind, us.contains (in operator)
@@ -64,8 +64,6 @@
 [X] @warn: log message, line of code, line numbers
 [X] @nogen
 [ ] pattern match nodes
-[ ] self-codereview
-[ ] flags for differeng gen settings (ES6 feature by feature, .forEach)
 
 [-] do construct (only used 3 times in target code base)
 
@@ -75,7 +73,10 @@
 
 
 [ ] investigate crash of `reAddComments ../samples/c.map`
-[ ] investigate RangeError: Maximum call stack size exceeded
+[ ] self-codereview
+[ ] pass CoffeeScript compiler tests
+[ ] end-to-end CoffeeScript vs TypeScript output tests
+[ ] flags for differeng gen settings (ES6 feature by feature, .forEach)
 [ ] bin/coffee should print stack trace on internal exception
 [X] bin/coffee should skip to compiling the next file on exception from the current one
 
