@@ -7,6 +7,7 @@ Error.stackTraceLimit = Infinity
 
 {Scope} = require './scope'
 {RESERVED, STRICT_PROSCRIBED} = require './lexer'
+underscore = require 'underscore'
 
 # Import the helpers we plan to use.
 {compact, flatten, extend, merge, del, starts, ends, last, some,
@@ -328,6 +329,26 @@ exports.Block = class Block extends Base
         prelude = @compileNode merge(o, indent: '')
         prelude.push @makeCode "\n"
       @expressions = rest
+
+    # this is just Palantir specific
+    prelude.push @makeCode '/// <reference path="../../libraries/libraries.d.ts" />\n\n'
+
+    # assuming AMD define
+    for node, node_i in @expressions
+      continue unless node instanceof Call and node.variable instanceof Value and node.variable.isNamed "define"
+      [mname..., importListVal, bodyFunc] = node.args
+      mname[0].warn "named modules not supported; name is being ignored" if mname.length > 0
+      continue unless importListVal instanceof Value and bodyFunc instanceof Code
+      continue unless (importList = importListVal.base) instanceof Arr
+
+      requires = for [iport, nameParam] in underscore.zip(importList.objects, bodyFunc.params)
+        "import #{nameParam.name.compile o} = require(#{iport.compile o})"
+
+      bodyFunc.body.expressions.unshift new Literal requires.join ";\n"
+
+      @expressions[node_i] = bodyFunc.body.expressions
+    @expressions = flatten @expressions
+
     fragments = @compileWithDeclarations o
     return fragments if o.bare
     [].concat prelude, fragments
