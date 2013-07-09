@@ -210,6 +210,75 @@ exports.Base = class Base
       answer = answer.concat fragments
     answer
 
+
+  #### Patern Matching
+  isa: (pattern) ->
+    match = {}
+    try
+      matchNode(pattern, this, match)
+      match
+    catch e
+      no
+
+  # a pattern *must* be a node at outermost
+  match: (parts) ->
+    for pattern, i in parts when pattern instanceof Base
+      if captures = @isa pattern
+        for fn in parts[i+1..] when fn not instanceof Base
+          return fn(captures)
+        return no  # pattern followed by no functions
+
+  with: (attributes) ->
+    for own attr, value of attributes
+      @[attr] = value
+    @matchedAttributes = @matchedAttributes.concat underscore.keys(attributes)
+    this
+
+  matchedAttributes: []
+
+# Pattern matching utilities
+matchNode = (pattern, node, match) ->
+  if pattern instanceof MatchCapture
+      match[pattern.name] = node
+      matchNode(pattern.subpattern, node, match) if pattern.subpattern?
+
+  else if pattern instanceof Base
+    throw "match failed" unless node instanceof pattern.constructor
+    for attr in pattern.children.concat pattern.matchedAttributes
+      matchNode(pattern[attr], node[attr], match)
+
+  else if underscore.isArray(pattern)
+    throw "match failed" unless underscore.isArray(node)
+    throw "match failed" unless node.length == pattern.length
+    for [p, e] in underscore.zip(pattern, node)
+      matchNode(p, e, match)
+
+  # TODO: ok if node instanceof pattern
+  # TODO: `Several` for mapping pattern matching over array
+
+  else
+    if node != pattern
+      throw "match failed"
+
+class MatchCapture extends Base
+  constructor: (@name, @subpattern) ->
+  toString: -> "M(#{@name})"
+exports.M = M = (name) -> new MatchCapture(name)
+
+class AnyMatch extends Base
+  toString: -> " any"
+exports.any = any = new AnyMatch
+
+#### utilities
+
+exports.mkVanillaID = mkVanillaID = (id) -> new Value(new Literal(id))
+exports.atProperty = atProperty = (expr) ->
+  if expr instanceof Value and expr.base.value is 'this' and expr.properties.length == 1
+    expr.properties[0].name
+  else
+    no
+
+
 #### Block
 
 # The block is the list of expressions that forms the body of an
@@ -335,23 +404,26 @@ exports.Block = class Block extends Base
 
     # assuming AMD define
     for node, node_i in @expressions
-      continue unless node instanceof Call and node.variable instanceof Value and node.variable.isNamed "define"
-      [mname..., importListVal, bodyFunc] = node.args
-      mname[0].warn "named modules not supported; name is being ignored" if mname.length > 0
-      continue unless importListVal instanceof Value and bodyFunc instanceof Code
-      continue unless (importList = importListVal.base) instanceof Arr
+      node.match [
+        new Call(mkVanillaID("define"), [new Value(new Arr(M("mLabels"))),
+          new Code(M("mNames"), new Block().with(expressions: M("bodyExprs")))
+        ])
+        new Call(mkVanillaID("define"), [M("mname"), new Value(new Arr(M("mLabels"))),
+          new Code(M("mNames"), new Block().with(expressions: M("bodyExprs")))
+        ])
+        ({mname, mLabels, mNames, bodyExprs}) =>
+          mname.warn "named modules not supported; name is being ignored" if mname
 
-      requires = for [iport, nameParam] in underscore.zip(importList.objects, bodyFunc.params)
-        "import #{nameParam.name.compile o} = require(#{iport.compile o})"
+          requires = for [iport, param] in underscore.zip(mLabels, mNames)
+            "import #{param.name.compile o} = require(#{iport.compile o})"
+          bodyExprs.unshift new Literal requires.join ";\n"
 
-      bodyExprs = bodyFunc.body.expressions
-      bodyExprs.unshift new Literal requires.join ";\n"
+          # assuming no weirder control flow, and last line is what's exported
+          eport = bodyExprs.pop()
+          bodyExprs.push new Literal "export = #{eport.compile o}"
 
-      eport = bodyExprs.pop()
-      console.log eport
-      bodyExprs.push new Literal "export = #{eport.compile o}"
-
-      @expressions[node_i] = bodyExprs
+          @expressions[node_i] = bodyExprs
+      ]
     @expressions = flatten @expressions
 
     fragments = @compileWithDeclarations o
@@ -403,6 +475,8 @@ exports.Block = class Block extends Base
 # `true`, `false`, `null`...
 exports.Literal = class Literal extends Base
   constructor: (@value) ->
+
+  matchedAttributes = ['value']
 
   makeReturn: ->
     if @isStatement() then this else super
@@ -578,12 +652,6 @@ exports.Value = class Value extends Base
           snd.base = ref
         return new If new Existence(fst), snd, soak: on
       no
-
-atProperty = (expr) ->
-  if expr instanceof Value and expr.base.value is 'this' and expr.properties.length == 1
-    expr.properties[0].name
-  else
-    no
 
 #### Comment
 

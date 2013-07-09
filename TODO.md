@@ -73,7 +73,7 @@
 
 
 [ ] investigate crash of `reAddComments ../samples/c.map`
-[ ] self-codereview
+[ ] self code review
 [ ] pass CoffeeScript compiler tests
 [ ] end-to-end CoffeeScript vs TypeScript output tests
 [ ] flags for differeng gen settings (ES6 feature by feature, .forEach)
