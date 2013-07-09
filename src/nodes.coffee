@@ -239,8 +239,11 @@ exports.Base = class Base
 # Pattern matching utilities
 matchNode = (pattern, node, match) ->
   if pattern instanceof MatchCapture
-      match[pattern.name] = node
-      matchNode(pattern.subpattern, node, match) if pattern.subpattern?
+    match[pattern.name] = node
+    matchNode(pattern.subpattern, node, match) if pattern.subpattern
+
+  else if pattern instanceof AnyMatch
+    return yes
 
   else if pattern instanceof Base
     throw "match failed" unless node instanceof pattern.constructor
@@ -253,7 +256,9 @@ matchNode = (pattern, node, match) ->
     for [p, e] in underscore.zip(pattern, node)
       matchNode(p, e, match)
 
-  # TODO: ok if node instanceof pattern
+  else if node instanceof pattern
+    return yes
+
   # TODO: `Several` for mapping pattern matching over array
 
   else
@@ -263,11 +268,11 @@ matchNode = (pattern, node, match) ->
 class MatchCapture extends Base
   constructor: (@name, @subpattern) ->
   toString: -> "M(#{@name})"
-exports.M = M = (name) -> new MatchCapture(name)
+exports.M = M = (args...) -> new MatchCapture(args...)
 
 class AnyMatch extends Base
   toString: -> " any"
-exports.any = any = new AnyMatch
+exports.any = any = new AnyMatch()
 
 #### utilities
 
@@ -402,7 +407,7 @@ exports.Block = class Block extends Base
     # this is just Palantir specific
     prelude.push @makeCode '/// <reference path="../../libraries/libraries.d.ts" />\n\n'
 
-    # assuming AMD define
+    # AMD module define
     for node, node_i in @expressions
       node.match [
         new Call(mkVanillaID("define"), [new Value(new Arr(M("mLabels"))),
@@ -414,13 +419,29 @@ exports.Block = class Block extends Base
         ({mname, mLabels, mNames, bodyExprs}) =>
           mname.warn "named modules not supported; name is being ignored" if mname
 
-          requires = for [iport, param] in underscore.zip(mLabels, mNames)
-            "import #{param.name.compile o} = require(#{iport.compile o})"
-          bodyExprs.unshift new Literal requires.join ";\n"
+          # imports
+          prelude.push @makeCode("\n")
+          for [iport, param] in underscore.zip(mLabels, mNames)
+            prelude = prelude.concat [
+              @makeCode("import "), param.compileToFragments(o),
+              @makeCode(" = require("), iport.compileNode(o), @makeCode(");\n")
+            ]
+          prelude.push @makeCode("\n")
+          prelude = flatten prelude
 
-          # assuming no weirder control flow, and last line is what's exported
-          eport = bodyExprs.pop()
-          bodyExprs.push new Literal "export = #{eport.compile o}"
+          # exports
+          bodyExprs.push bodyExprs.pop().match [
+            M("eport", Value), ({eport}) =>
+              o.scope.parameter "export"  # suppress `var export`
+              new Assign(mkVanillaID("export"), eport)
+
+            M("klass", Class), ({klass}) =>
+              o.scope.parameter "export"  # suppress `var export`
+              [
+                klass
+                new Assign(mkVanillaID("export"), klass.variable)
+              ]
+          ]
 
           @expressions[node_i] = bodyExprs
       ]
