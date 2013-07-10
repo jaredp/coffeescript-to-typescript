@@ -240,6 +240,8 @@ exports.Base = class Base
 
   matchedAttributes: []
 
+  when: (@patternMatchingGuard) -> this
+
 # Pattern matching utilities
 isMatchPattern = (p) -> p instanceof Base or p.isNodeClass
 
@@ -255,6 +257,11 @@ exports.matchNode = matchNode = (pattern, node, match) ->
     throw "match failed" unless node instanceof pattern.constructor
     for attr in pattern.children.concat pattern.matchedAttributes
       matchNode(pattern[attr], node[attr], match)
+    if pattern.patternMatchingGuard
+      caps = pattern.patternMatchingGuard(node, match)
+      if caps == yes then return yes
+      if caps == no then throw "match failed"
+      underscore.extend(match, caps)
 
   else if underscore.isArray(pattern)
     throw "match failed" unless underscore.isArray(node)
@@ -370,7 +377,7 @@ exports.Block = class Block extends Base
         node.front = true
         fragments = node.compileToFragments o
         if @exportAll then node.match [  # add assignment in here
-          Class, Code, () =>
+          Class, Code, new Assign(any, any).when((a)->a.isCodeDef()), () =>
             fragments.unshift @makeCode "export "
         ]
         unless node.isStatement o
