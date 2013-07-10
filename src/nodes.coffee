@@ -56,6 +56,9 @@ fragmentsToText = (fragments) ->
 # scope, and indentation level.
 exports.Base = class Base
 
+  # hack for .match
+  @isNodeClass: yes
+
   compile: (o, lvl) ->
     fragmentsToText @compileToFragments o, lvl
 
@@ -221,11 +224,11 @@ exports.Base = class Base
       return no if e == "match failed"
       throw e
 
-  # a pattern *must* be a node at outermost
+  # a pattern *must* be a node or node class at outermost
   match: (parts) ->
-    for pattern, i in parts when pattern instanceof Base
+    for pattern, i in parts when isMatchPattern pattern
       if captures = @isa pattern
-        for fn in parts[i+1..] when fn not instanceof Base
+        for fn in parts[i+1..] when not isMatchPattern fn
           return fn(captures)
         return no  # pattern followed by no functions
 
@@ -238,6 +241,8 @@ exports.Base = class Base
   matchedAttributes: []
 
 # Pattern matching utilities
+isMatchPattern = (p) -> p instanceof Base or p.isNodeClass
+
 exports.matchNode = matchNode = (pattern, node, match) ->
   if pattern instanceof MatchCapture
     match[pattern.name] = node
@@ -257,7 +262,7 @@ exports.matchNode = matchNode = (pattern, node, match) ->
     for [p, e] in underscore.zip(pattern, node)
       matchNode(p, e, match)
 
-  else if pattern instanceof Base.constructor and node instanceof pattern
+  else if underscore.isFunction(pattern) and node instanceof pattern
     return yes
 
   # TODO: `Several` for mapping pattern matching over array
@@ -364,6 +369,10 @@ exports.Block = class Block extends Base
       else if top
         node.front = true
         fragments = node.compileToFragments o
+        if @exportAll then node.match [  # add assignment in here
+          Class, Code, () =>
+            fragments.unshift @makeCode "export "
+        ]
         unless node.isStatement o
           fragments.unshift @makeCode "#{@tab}"
           fragments.push @makeCode ";"
@@ -434,9 +443,9 @@ exports.Block = class Block extends Base
           bodyExprs.push bodyExprs.pop().match [
             new Value(new Obj(M("members"))), ({members}) =>
               @exportAll = yes
-              for renaming in members when renaming
+              for renaming in members
                 continue unless renaming instanceof Assign            # ignore { A }, because should `export A` on def
-                continue unless renaming.variable.isa renaming.value  # ignore { A: A }, as above
+                continue if renaming.variable.isa renaming.value      # ignore { A: A }, as above
                 delete renaming.context                               # use = instead of :
                 renaming
 
