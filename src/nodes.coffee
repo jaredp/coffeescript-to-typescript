@@ -1132,7 +1132,6 @@ exports.Class = class Class extends Base
     members = []
     boundFuncs = []
     ctor = null
-    addBoundFunctions: (o) ->
 
     addMember = (member)->
       members.push member
@@ -1193,17 +1192,22 @@ exports.Class = class Class extends Base
         answer.push (assign.compileToFragments o)...
         continue
 
+      visibility_flag = "public "
+      visibility_flag = "" if assign.value.isConstructor
+
       if vname = atProperty assign.variable
         isStatic = yes
+      else if (vname = assign.variable.vanillaName()) and assign.context != 'object'
+        isStatic = yes
+        visibility_flag = "private "
       else if vname = assign.variable.vanillaName()
         isStatic = no
       else
         assign.nogen "can't handle complex assignment in class body"
         continue
 
-      static_flag = if isStatic                           then "static "    else ""
-      public_flag = unless assign.value.isConstructor     then "public "    else ""
-      answer.push @makeCode "#{o.indent}#{public_flag}#{static_flag}"
+      static_flag = if isStatic                 then "static "    else ""
+      answer.push @makeCode "#{o.indent}#{visibility_flag}#{static_flag}"
 
       if (fn = assign.value) instanceof Code
         fn.isMethod = yes
