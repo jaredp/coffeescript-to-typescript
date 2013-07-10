@@ -440,8 +440,8 @@ exports.Block = class Block extends Base
           prelude.push @makeCode("\n")
           for [iport, param] in underscore.zip(mLabels, mNames)
             prelude = prelude.concat [
-              @makeCode("import "), param.compileToFragments(o),
-              @makeCode(" = require("), iport.compileNode(o), @makeCode(");\n")
+              if param then [@makeCode("import "), param.compileToFragments(o), @makeCode(' = ')] else []
+              @makeCode("require("), iport.compileNode(o), @makeCode(");\n")
             ]
           prelude.push @makeCode("\n")
           prelude = flatten prelude
