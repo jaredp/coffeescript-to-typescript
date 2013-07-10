@@ -218,7 +218,8 @@ exports.Base = class Base
       matchNode(pattern, this, match)
       match
     catch e
-      no
+      return no if e == "match failed"
+      throw e
 
   # a pattern *must* be a node at outermost
   match: (parts) ->
@@ -237,7 +238,7 @@ exports.Base = class Base
   matchedAttributes: []
 
 # Pattern matching utilities
-matchNode = (pattern, node, match) ->
+exports.matchNode = matchNode = (pattern, node, match) ->
   if pattern instanceof MatchCapture
     match[pattern.name] = node
     matchNode(pattern.subpattern, node, match) if pattern.subpattern
@@ -256,7 +257,7 @@ matchNode = (pattern, node, match) ->
     for [p, e] in underscore.zip(pattern, node)
       matchNode(p, e, match)
 
-  else if node instanceof pattern
+  else if pattern instanceof Base.constructor and node instanceof pattern
     return yes
 
   # TODO: `Several` for mapping pattern matching over array
@@ -431,6 +432,14 @@ exports.Block = class Block extends Base
 
           # exports
           bodyExprs.push bodyExprs.pop().match [
+            new Value(new Obj(M("members"))), ({members}) =>
+              @exportAll = yes
+              for renaming in members when renaming
+                continue unless renaming instanceof Assign            # ignore { A }, because should `export A` on def
+                continue unless renaming.variable.isa renaming.value  # ignore { A: A }, as above
+                delete renaming.context                               # use = instead of :
+                renaming
+
             M("eport", Value), ({eport}) =>
               o.scope.parameter "export"  # suppress `var export`
               new Assign(mkVanillaID("export"), eport)
@@ -441,6 +450,10 @@ exports.Block = class Block extends Base
                 klass
                 new Assign(mkVanillaID("export"), klass.variable)
               ]
+
+            M("last"), ({last}) =>
+              last.warn "don't know how to export"
+              new Assign(mkVanillaID("export"), eport)
           ]
 
           @expressions[node_i] = bodyExprs
@@ -497,7 +510,7 @@ exports.Block = class Block extends Base
 exports.Literal = class Literal extends Base
   constructor: (@value) ->
 
-  matchedAttributes = ['value']
+  matchedAttributes: ['value']
 
   makeReturn: ->
     if @isStatement() then this else super
