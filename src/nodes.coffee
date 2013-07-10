@@ -447,7 +447,9 @@ exports.Block = class Block extends Base
           prelude = flatten prelude
 
           # exports
-          bodyExprs.push bodyExprs.pop().match [
+          bodyExprs.push bodyExprs.pop().match([
+            new Return(M("retval")), M("retval"), ({retval}) -> retval
+          ]).match [
             new Value(new Obj(M("members"))), ({members}) =>
               @exportAll = yes
               for renaming in members
@@ -468,8 +470,11 @@ exports.Block = class Block extends Base
               ]
 
             M("last"), ({last}) =>
-              last.warn "don't know how to export"
-              new Assign(mkVanillaID("export"), eport)
+              o.scope.parameter "export"  # suppress `var export`
+              [
+                new Assign(mkVanillaID("_export"), last)
+                new Assign(mkVanillaID("export"), mkVanillaID("_export"))
+              ]
           ]
 
           @expressions[node_i] = bodyExprs
