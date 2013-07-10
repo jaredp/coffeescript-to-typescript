@@ -2338,6 +2338,7 @@ IS_STRING = /^['"]/
 
 # Helper for ensuring that utility functions are assigned at the top level.
 utility = (name) ->
+  return "_.bind" if name == "bind"
   ref = "__#{name}"
   Scope.root.assign ref, UTILITIES[name]()
   ref
