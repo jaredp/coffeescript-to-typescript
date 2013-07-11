@@ -10,7 +10,7 @@ Error.stackTraceLimit = Infinity
 underscore = require 'underscore'
 
 # Import the helpers we plan to use.
-{compact, flatten, extend, merge, del, starts, ends, last, some,
+helpers = {compact, flatten, extend, merge, del, starts, ends, last, some,
 addLocationDataFn, locationDataToString, printStack
 throwSyntaxError, sendSyntaxWarning, sendNotGeneratingWarning} = require './helpers'
 
@@ -421,8 +421,8 @@ exports.Block = class Block extends Base
         prelude.push @makeCode "\n"
       @expressions = rest
 
-    # this is just Palantir specific
-    prelude.push @makeCode '/// <reference path="../../libraries/libraries.d.ts" />\n\n'
+    if helpers.tsReferencePath
+      prelude.push @makeCode "/// <reference path=\"#{helpers.tsReferencePath}\" />\n\n"
 
     # AMD module define
     for node, node_i in @expressions

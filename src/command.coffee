@@ -52,6 +52,8 @@ SWITCHES = [
   ['-t', '--tokens',          'print out the tokens that the lexer/rewriter produce']
   ['-v', '--version',         'display the version number']
   ['-w', '--watch',           'watch scripts for changes and rerun commands']
+
+  ['-r', '--ref [FILE]',      'add ///<reference path="[file]" /> to ts files']
 ]
 
 # Top-level objects shared by all the functions.
@@ -76,6 +78,7 @@ onCompilationFinished = -> return
 # `--` will be passed verbatim to your script as arguments in `process.argv`
 exports.run = ->
   parseOptions()
+  helpers.tsReferencePath = opts.ref
   return forkNode()                      if opts.nodejs
   return usage()                         if opts.help
   return version()                       if opts.version
