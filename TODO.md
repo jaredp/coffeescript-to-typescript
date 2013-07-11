@@ -70,14 +70,17 @@
 
 [ ] fakeblock
 
-BUGFIXES:
-dont use `=> expr` when expr is Obj; tsc will think the Obj's { } denote a block
-hanlde exporting Arr like exporting arbitrary expr
-TPA does, in fact, need to handle classes with the same name, and possibly renamed
-in `class C then p = v`, p may be used as static and may be used as nonstatic (lineAnnotation:162)
-
-[ ] self code review
 [ ] end-to-end CoffeeScript vs TypeScript output tests
-[ ] bin/coffee should print stack trace on internal exception
+[X] bin/coffee should print stack trace on internal exception
 [X] bin/coffee should skip to compiling the next file on exception from the current one
+
+FIXABLE BUGS:
+[ ] dont use `=> expr` when expr is Obj; tsc will think the Obj's { } denote a block
+[X] hanlde exporting Arr like exporting arbitrary expr
+[ ] TPA does, in fact, need to handle classes with the same name, and possibly renamed
+[ ] in `class C then p = v`, p may be used as static and may be used as nonstatic (lineAnnotation.ts:162)
+[ ] `private static constructor(){` (lineAnnotation.ts:149)
+[ ] in generated constructor, super() should be first, not last (lineAnnotation.ts:153)
+
+
 

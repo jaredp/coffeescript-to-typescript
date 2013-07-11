@@ -458,6 +458,13 @@ exports.Block = class Block extends Base
                 delete renaming.context                               # use = instead of :
                 renaming
 
+            new M("last", new Value(Arr)), ({last}) =>                    # use the default, same as bottom
+              o.scope.parameter "export"  # suppress `var export`
+              [
+                new Assign(mkVanillaID("_export"), last)
+                new Assign(mkVanillaID("export"), mkVanillaID("_export"))
+              ]
+
             M("eport", Value), ({eport}) =>
               o.scope.parameter "export"  # suppress `var export`
               new Assign(mkVanillaID("export"), eport)
