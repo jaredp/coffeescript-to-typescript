@@ -422,7 +422,7 @@ exports.Block = class Block extends Base
       @expressions = rest
 
     if helpers.tsReferencePath
-      prelude.push @makeCode "/// <reference path=\"#{helpers.tsReferencePath}\" />\n\n"
+      prelude.push @makeCode "/// <reference path=\"#{helpers.tsReferencePath}\" />\n"
 
     # AMD module define
     for node, node_i in @expressions

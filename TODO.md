@@ -68,12 +68,16 @@
   [X] read tsc's errors to find undeclared members... maybe this should be a separate tool...
   [X] tsc doesn't try to guess the types of the members... for now maybe we should just use public
 
+[ ] fakeblock
 
-[ ] investigate crash of `reAddComments ../samples/c.map`
+BUGFIXES:
+dont use `=> expr` when expr is Obj; tsc will think the Obj's { } denote a block
+hanlde exporting Arr like exporting arbitrary expr
+TPA does, in fact, need to handle classes with the same name, and possibly renamed
+in `class C then p = v`, p may be used as static and may be used as nonstatic (lineAnnotation:162)
+
 [ ] self code review
-[ ] pass CoffeeScript compiler tests
 [ ] end-to-end CoffeeScript vs TypeScript output tests
-[ ] flags for differeng gen settings (ES6 feature by feature, .forEach)
 [ ] bin/coffee should print stack trace on internal exception
 [X] bin/coffee should skip to compiling the next file on exception from the current one
 
