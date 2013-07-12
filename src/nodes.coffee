@@ -447,8 +447,12 @@ exports.Block = class Block extends Base
               if param then [@makeCode("import "), param.compileToFragments(o), @makeCode(' = ')] else []
               @makeCode("require("), iport.compileNode(o), @makeCode(");\n")
             ]
-          prelude.push @makeCode("\n")
           prelude = flatten prelude
+          underscoreImport =
+          unless /import _ = require\(("underscore)|('underscore')\);\n/.test fragmentsToText prelude
+            prelude.push @makeCode "import _ = require(\"underscore\");\n"
+
+          prelude.push @makeCode("\n")
 
           # exports
           bodyExprs.push bodyExprs.pop().match([

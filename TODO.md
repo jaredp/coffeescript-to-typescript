@@ -72,7 +72,7 @@
 [X] use _.range for [1..10]
 [ ] use => lambdas where just [return @(nothis)]
 [ ] if a line is a series of properties (.attr("", =>)*), break up into several lines w/ indentation
-[ ] add `import _ = require('underscore')` if it doesn't already exist
+[X] add `import _ = require('underscore')` if it doesn't already exist
 
 [ ] end-to-end CoffeeScript vs TypeScript output tests
 [X] bin/coffee should print stack trace on internal exception
