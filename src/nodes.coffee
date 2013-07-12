@@ -1190,60 +1190,63 @@ exports.Class = class Class extends Base
     name = "_#{name}" if name.reserved
     indent = "#{o.indent}"
 
-    answer = flatten [
+    prelude = []
+    declaration = [
       @makeCode indent
       @makeCode "class #{name}"
-      if @parent then [@makeCode( " extends "), @parent.compileToFragments o] else []
+      if @parent then [
+        @makeCode( " extends "),
+        @parent.compileToFragments o
+      ] else []
       @makeCode " {\n"
     ]
 
     @body.spaced = yes
     o.indent += TAB
 
-    for assign, assign_index in @getMembers(o)
-      answer.push @makeCode "\n\n" if assign_index isnt 0
-
+    members = for assign in @getMembers(o)
       if assign not instanceof Assign
-        answer.push (assign.compileToFragments o)...
-        continue
-
-      visibility_flag = "public "
-      visibility_flag = "" if assign.value.isConstructor
-
-      if vname = atProperty assign.variable
-        isStatic = yes
-      else if (vname = assign.variable.vanillaName()) and assign.context != 'object'
-        isStatic = yes
-        visibility_flag = "private "
-      else if vname = assign.variable.vanillaName()
-        isStatic = no
+        assign.compileToFragments o
       else
-        assign.nogen "can't handle complex assignment in class body"
-        continue
+        memberCode = []
 
-      static_flag = if isStatic                 then "static "    else ""
-      answer.push @makeCode "#{o.indent}#{visibility_flag}#{static_flag}"
+        visibility_flag = "public "
+        visibility_flag = "" if assign.value.isConstructor
 
-      if (fn = assign.value) instanceof Code
-        fn.isMethod = yes
-        fn.static = isStatic
-        fn.name = vname
-        fn.klass = this
+        if vname = atProperty assign.variable
+          isStatic = yes
+        else if assign.context is 'object' and vname = assign.variable.vanillaName()
+          isStatic = no
+        else if assign.context isnt 'object'
+          continue  #FIXME FIXME
+        else
+          assign.nogen "can't handle complex assignment in class body"
+          continue
 
-        answer = answer.concat flatten [
-          fn.compileToFragments(o)
-        ]
+        static_flag = if isStatic                 then "static "    else ""
+        memberCode.push @makeCode "#{o.indent}#{visibility_flag}#{static_flag}"
 
-      else
-        answer = answer.concat flatten [
-          vname.compileToFragments o
-          @makeCode " = "
-          assign.value.compileToFragments o
-          @makeCode ";"
-        ]
+        if (fn = assign.value) instanceof Code
+          fn.isMethod = yes
+          fn.static = isStatic
+          fn.name = vname
+          fn.klass = this
+          memberCode.push fn.compileToFragments(o)
+        else
+          memberCode.push [
+            vname.compileToFragments o
+            @makeCode " = "
+            assign.value.compileToFragments o
+            @makeCode ";"
+          ]
+        flatten memberCode
 
-    answer.push @makeCode("\n#{indent}}")
-    answer
+    flatten [
+      prelude
+      declaration
+      @joinFragmentArrays(members, '\n\n')
+      @makeCode("\n#{indent}}")
+    ]
 
 #### Assign
 
