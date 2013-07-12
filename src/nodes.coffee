@@ -1202,7 +1202,8 @@ exports.Class = class Class extends Base
     ]
 
     @body.spaced = yes
-    o.indent += TAB
+    _o = o
+    o = merge o, indent: o.indent + TAB
 
     members = for assign in @getMembers(o)
       if assign not instanceof Assign
@@ -1218,7 +1219,12 @@ exports.Class = class Class extends Base
         else if assign.context is 'object' and vname = assign.variable.vanillaName()
           isStatic = no
         else if assign.context isnt 'object'
-          continue  #FIXME FIXME
+          prelude.push [
+            assign.compileToFragments o
+            @makeCode ";\n"
+          ]
+          assign.warn "moving above class definition, maybe should be inside as static or nonstatic"
+          continue
         else
           assign.nogen "can't handle complex assignment in class body"
           continue
