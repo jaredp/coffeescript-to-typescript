@@ -991,7 +991,7 @@ exports.Range = class Range extends Base
       return [@makeCode "[#{ range.join(', ') }]"]
 
     @warn "using _.range(); will not work if left hand side < right"
-    @toNum = new Op('+', @toNum, new Literal('1')) unless @exclusive
+    @to = new Op('+', @to, new Literal('1')) unless @exclusive
     u_range_call = new Call(mkVanillaID('_.range'), [@from, @to])
     return u_range_call.compileNode o
 
@@ -1158,7 +1158,7 @@ exports.Class = class Class extends Base
         else []
       ), 'func')
       ctor.isConstructor = yes
-      members.unshift new Assign(new Value(new Literal("constructor")), ctor)
+      members.unshift new Assign(new Value(new Literal("constructor")), ctor, 'object')
 
     # bind members
     for bvar in boundFuncs
