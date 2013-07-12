@@ -84,10 +84,10 @@ FIXABLE BUGS:
 [ ] TPA does, in fact, need to handle classes with the same name, and possibly renamed
 [ ] in `class C then p = v`, p may be used as static and may be used as nonstatic (lineAnnotation.ts:162)
 [X] `private static constructor(){` (lineAnnotation.ts:149)
-[ ] in generated constructor, super() should be first, not last (lineAnnotation.ts:153)
+[X] in generated constructor, super() should be first, not last (lineAnnotation.ts:153)
 [ ] remove unused variables, particularly _ref type stuff (_j, _len1 on lineAnnotation.ts:325)
 [ ] I don't think TPA considers static variables
-[ ] .forEach() lambdas need to have their variables declared in the enclosing scope
+[X] .forEach() lambdas need to have their variables declared in the enclosing scope
 
 
 

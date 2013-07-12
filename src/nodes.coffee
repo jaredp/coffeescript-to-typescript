@@ -2034,7 +2034,7 @@ exports.For = class For extends While
       comprehension = source
       comprehension = mkMCall comprehension, "filter", [mkLam Block.wrap [new Return @guard]] if @guard
       comprehension = mkMCall comprehension, (if returns then "map" else "forEach"), [mkLam @body]
-      return comprehension.compileNode o
+      return comprehension.compileToFragments merge(o, sharedScope: yes)
 
     index     = @index and (@index.compile o, LEVEL_LIST)
     scope.find(name)  if name and not @pattern
