@@ -215,14 +215,7 @@ exports.Base = class Base
 
 
   #### Patern Matching
-  isa: (pattern) ->
-    match = {}
-    try
-      matchNode(pattern, this, match)
-      match
-    catch e
-      return no if e == "match failed"
-      throw e
+  isa: (pattern) -> matchPattern(this, pattern)
 
   # a pattern *must* be a node or node class at outermost
   match: (parts) ->
@@ -244,6 +237,17 @@ exports.Base = class Base
 
 # Pattern matching utilities
 isMatchPattern = (p) -> p instanceof Base or p.isNodeClass
+
+exports.matchPattern = matchPattern = (node, pattern) ->
+  match = {}
+  try
+    matchNode(pattern, node, match)
+    match
+  catch e
+    return no if e == "match failed"
+    throw e
+
+Array::isa = (pattern) -> matchPattern(this, pattern)
 
 exports.matchNode = matchNode = (pattern, node, match) ->
   if pattern instanceof MatchCapture
@@ -1496,8 +1500,9 @@ exports.Code = class Code extends Base
       else if not @bound
         [@makeCode("function"), argscode, bodycode]
       else if @bound and not @name?
-        if @body.expressions.length == 1 and @body.expressions[0] instanceof Return
-          bodycode = @body.expressions[0].expression.compileNode o
+        if {lamExpr} = @body.isa(new Block([new Return().with(expression: M("lamExpr"))]))
+          bodycode = lamExpr.compileNode o
+          bodycode = [@makeCode('('), bodycode, @makeCode(')')] if lamExpr instanceof Obj
         [argscode, @makeCode(' => '), bodycode]
       else if @bound and @name?
         @nogen "bound non-method function has a name (internal compiler error)"
@@ -2018,7 +2023,7 @@ exports.For = class For extends While
     name      = @name  and (@name.compile o, LEVEL_LIST)
 
     if not @index and not @object and not @step and not @pattern
-      mkLam = (exprs) => new Code [new Param @name], exprs, 'boundfunc'
+      mkLam = (exprs) => new Code([new Param @name], exprs, 'boundfunc')
       mkMCall = (obj, meth, args) => new Call(new Value(obj, [new Access new Literal meth]), args)
       returns = o.level > LEVEL_TOP   # slightly hackish
 

@@ -69,18 +69,23 @@
   [X] tsc doesn't try to guess the types of the members... for now maybe we should just use public
 
 [ ] fakeblock
+[ ] use _.range for [1..10]
+[ ] use => lambdas where just [return @(nothis)]
+[ ] if a line is a series of properties (.attr("", =>)*), break up into several lines w/ indentation
+[ ] add `import _ = require('underscore')` if it doesn't already exist
 
 [ ] end-to-end CoffeeScript vs TypeScript output tests
 [X] bin/coffee should print stack trace on internal exception
 [X] bin/coffee should skip to compiling the next file on exception from the current one
 
 FIXABLE BUGS:
-[ ] dont use `=> expr` when expr is Obj; tsc will think the Obj's { } denote a block
+[X] in `=> {k: v*}`, use `=> ({k: v*})` or tsc will think the braces denote a block
 [X] hanlde exporting Arr like exporting arbitrary expr
 [ ] TPA does, in fact, need to handle classes with the same name, and possibly renamed
 [ ] in `class C then p = v`, p may be used as static and may be used as nonstatic (lineAnnotation.ts:162)
 [ ] `private static constructor(){` (lineAnnotation.ts:149)
 [ ] in generated constructor, super() should be first, not last (lineAnnotation.ts:153)
+[ ] remove unused variables, particularly _ref type stuff (_j, _len1 on lineAnnotation.ts:325)
 
 
 
