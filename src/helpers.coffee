@@ -155,6 +155,7 @@ exports.setTranslatingFile = (fname, code) ->
   translating_code = code || fs.readFileSync(translating_filename, 'utf8')
 
 exports.sendSyntaxWarning = (message, location) ->
+  return if exports.noWarn
   error = new SyntaxError message
   if location
     location.last_line ?= location.first_line

@@ -1160,13 +1160,20 @@ exports.Class = class Class extends Base
       ctor.isConstructor = yes
       members.unshift new Assign(new Value(new Literal("constructor")), ctor, 'object')
 
-    # bind members
-    if boundFuncs.length > 0
-      hopefullySuper = ctor.body.expressions.shift()
-      for bvar in boundFuncs
-        lhs = (new Value (new Literal "this"), [new Access bvar]).compile o
-        ctor.body.expressions.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
-      ctor.body.expressions.unshift hopefullySuper if hopefullySuper
+    # bind members after super call
+    if ctor and ctor.body.expressions.length > 0
+      possiblySuperCall = ctor.body.expressions.shift()
+      if possiblySuperCall instanceof Call and possiblySuperCall.isSuper
+        sCall = possiblySuperCall
+      else
+        ctor.body.expressions.unshift possiblySuperCall
+
+    # bind the members
+    for bvar in boundFuncs
+      lhs = (new Value (new Literal "this"), [new Access bvar]).compile o
+      ctor.body.expressions.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
+
+    ctor.body.expressions.unshift sCall if sCall?
 
     members
 

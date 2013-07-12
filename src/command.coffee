@@ -54,6 +54,7 @@ SWITCHES = [
   ['-w', '--watch',           'watch scripts for changes and rerun commands']
 
   ['-r', '--ref [FILE]',      'add ///<reference path="[file]" /> to ts files']
+  ['-d', '--dangerous',       'ignore warnings']
 ]
 
 # Top-level objects shared by all the functions.
@@ -79,6 +80,8 @@ onCompilationFinished = -> return
 exports.run = ->
   parseOptions()
   helpers.tsReferencePath = opts.ref
+  helpers.noWarn = yes                   if opts.dangerous
+
   return forkNode()                      if opts.nodejs
   return usage()                         if opts.help
   return version()                       if opts.version
