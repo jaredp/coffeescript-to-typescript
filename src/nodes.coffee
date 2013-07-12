@@ -939,8 +939,8 @@ exports.Range = class Range extends Base
   # When compiled normally, the range returns the contents of the *for loop*
   # needed to iterate over the values in the range. Used by comprehensions.
   compileNode: (o) ->
-    @compileVariables o unless @fromVar
     return @compileArray(o) unless o.index
+    @compileVariables o unless @fromVar
 
     # Set up endpoints.
     known    = @fromNum and @toNum
@@ -989,21 +989,11 @@ exports.Range = class Range extends Base
       range = [+@fromNum..+@toNum]
       range.pop() if @exclusive
       return [@makeCode "[#{ range.join(', ') }]"]
-    idt    = @tab + TAB
-    i      = o.scope.freeVariable 'i'
-    result = o.scope.freeVariable 'results'
-    pre    = "\n#{idt}#{result} = [];"
-    if @fromNum and @toNum
-      o.index = i
-      body    = fragmentsToText @compileNode o
-    else
-      vars    = "#{i} = #{@fromC}" + if @toC isnt @toVar then ", #{@toC}" else ''
-      cond    = "#{@fromVar} <= #{@toVar}"
-      body    = "var #{vars}; #{cond} ? #{i} <#{@equals} #{@toVar} : #{i} >#{@equals} #{@toVar}; #{cond} ? #{i}++ : #{i}--"
-    post   = "{ #{result}.push(#{i}); }\n#{idt}return #{result};\n#{o.indent}"
-    hasArgs = (node) -> node?.contains (n) -> n instanceof Literal and n.value is 'arguments' and not n.asKey
-    args   = ', arguments' if hasArgs(@from) or hasArgs(@to)
-    [@makeCode "(function() {#{pre}\n#{idt}for (#{body})#{post}}).apply(this#{args ? ''})"]
+
+    @warn "using _.range(); will not work if left hand side < right"
+    @toNum = new Op('+', @toNum, new Literal('1')) unless @exclusive
+    u_range_call = new Call(mkVanillaID('_.range'), [@from, @to])
+    return u_range_call.compileNode o
 
 #### Slice
 

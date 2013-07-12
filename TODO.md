@@ -86,6 +86,9 @@ FIXABLE BUGS:
 [ ] `private static constructor(){` (lineAnnotation.ts:149)
 [ ] in generated constructor, super() should be first, not last (lineAnnotation.ts:153)
 [ ] remove unused variables, particularly _ref type stuff (_j, _len1 on lineAnnotation.ts:325)
+[ ] I don't think TPA considers static variables
+[ ] .forEach() lambdas need to have their variables declared in the enclosing scope
+
 
 
 
