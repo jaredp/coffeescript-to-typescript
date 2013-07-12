@@ -1161,9 +1161,12 @@ exports.Class = class Class extends Base
       members.unshift new Assign(new Value(new Literal("constructor")), ctor, 'object')
 
     # bind members
-    for bvar in boundFuncs
-      lhs = (new Value (new Literal "this"), [new Access bvar]).compile o
-      ctor.body.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
+    if boundFuncs.length > 0
+      hopefullySuper = ctor.body.expressions.shift()
+      for bvar in boundFuncs
+        lhs = (new Value (new Literal "this"), [new Access bvar]).compile o
+        ctor.body.expressions.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
+      ctor.body.expressions.unshift hopefullySuper if hopefullySuper
 
     members
 
