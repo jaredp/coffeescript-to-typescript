@@ -62,7 +62,8 @@
 [X] @nogen
 [X] pattern match nodes
 
-[-] do construct (only used 3 times in target code base)
+[ ] do construct (only used 3 times in target code base)
+[ ] make sure soaks are working
 
 [X] TypeScript requrires members to be declared
   [X] read tsc's errors to find undeclared members... maybe this should be a separate tool...
@@ -79,6 +80,7 @@
 [X] bin/coffee should skip to compiling the next file on exception from the current one
 
 FIXABLE BUGS:
+[ ] TPA shouldn't crash on too much stderr from tsc
 [X] in `=> {k: v*}`, use `=> ({k: v*})` or tsc will think the braces denote a block
 [X] hanlde exporting Arr like exporting arbitrary expr
 [ ] TPA does, in fact, need to handle classes with the same name, and possibly renamed
@@ -87,7 +89,8 @@ FIXABLE BUGS:
 [X] in generated constructor, super() should be first, not last (lineAnnotation.ts:153)
 [ ] remove unused variables, particularly _ref type stuff (_j, _len1 on lineAnnotation.ts:325)
 [ ] I don't think TPA considers static variables
-[X] .forEach() lambdas need to have their variables declared in the enclosing scope
+[O] .forEach() lambdas need to have their variables declared in the enclosing scope (spreadsheet/grid.ts:449)
+[X] samples/j.coffee -- d is never defined?
 
 
 
