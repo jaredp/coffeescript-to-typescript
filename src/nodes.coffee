@@ -7,11 +7,13 @@ Error.stackTraceLimit = Infinity
 
 {Scope} = require './scope'
 {RESERVED, STRICT_PROSCRIBED} = require './lexer'
+
 underscore = require 'underscore'
+path = require 'path'
 
 # Import the helpers we plan to use.
 helpers = {compact, flatten, extend, merge, del, starts, ends, last, some,
-addLocationDataFn, locationDataToString, printStack
+addLocationDataFn, locationDataToString, printStack, currentFilename
 throwSyntaxError, sendSyntaxWarning, sendNotGeneratingWarning} = require './helpers'
 
 # Functions required by parser
@@ -426,7 +428,11 @@ exports.Block = class Block extends Base
       @expressions = rest
 
     if helpers.tsReferencePath
-      prelude.push @makeCode "/// <reference path=\"#{helpers.tsReferencePath}\" />\n"
+      refpath = if thisFile = helpers.currentFilename()
+        path.relative(path.dirname(thisFile), helpers.tsReferencePath)
+      else
+        helpers.tsReferencePath
+      prelude.push @makeCode "/// <reference path=\"#{refpath}\" />\n"
 
     # AMD module define
     for node, node_i in @expressions
@@ -2023,6 +2029,7 @@ exports.For = class For extends While
 
   # It's an expression if we're going to use the ES5 .filter(), .map(), or .forEach()
   isStatement: -> !(not @index and not @object and not @step and not @pattern)
+
 
   # Welcome to the hairiest method in all of CoffeeScript. Handles the inner
   # loop, filtering, stepping, and result saving for array, object, and range
