@@ -28,7 +28,7 @@ it belongs to.
 Adds a new variable or overrides an existing one.
 
       add: (name, type, immediate) ->
-        if @shared and not immediate and type isnt 'param'
+        if @shared and (@undeclared or not immediate) and type isnt 'param'
           @parent.add name, type, immediate
         else if Object::hasOwnProperty.call @positions, name
           @variables[@positions[name]].type = type

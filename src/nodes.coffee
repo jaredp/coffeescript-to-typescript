@@ -1449,9 +1449,10 @@ exports.Code = class Code extends Base
   # arrow, generates a wrapper that saves the current value of `this` through
   # a closure.
   compileNode: (o) ->
-    o.scope         = new Scope o.scope, @body, this
-    o.scope.shared  = del(o, 'sharedScope')
-    o.indent        += TAB
+    o.scope             = new Scope o.scope, @body, this
+    o.scope.shared      = del(o, 'sharedScope')
+    o.scope.undeclared  = del(o, 'undeclaredScope')
+    o.indent            += TAB
     delete o.bare
     delete o.isExistentialEquals
     params = []
@@ -2043,7 +2044,7 @@ exports.For = class For extends While
       comprehension = source
       comprehension = mkMCall comprehension, "filter", [mkLam Block.wrap [new Return @guard]] if @guard
       comprehension = mkMCall comprehension, (if returns then "map" else "forEach"), [mkLam @body]
-      return comprehension.compileToFragments merge(o, sharedScope: yes)
+      return comprehension.compileToFragments merge(o, sharedScope: yes, undeclaredScope: yes)
 
     index     = @index and (@index.compile o, LEVEL_LIST)
     scope.find(name)  if name and not @pattern

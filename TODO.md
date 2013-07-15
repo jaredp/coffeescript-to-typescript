@@ -74,6 +74,8 @@
 [ ] use => lambdas where just [return @(nothis)]
 [ ] if a line is a series of properties (.attr("", =>)*), break up into several lines w/ indentation
 [X] add `import _ = require('underscore')` if it doesn't already exist
+[ ] should `a ? b` --> `a || b`
+[ ] remove extra parentheses (particuarly around function calls)
 
 [ ] end-to-end CoffeeScript vs TypeScript output tests
 [X] bin/coffee should print stack trace on internal exception
@@ -89,7 +91,7 @@ FIXABLE BUGS:
 [X] in generated constructor, super() should be first, not last (lineAnnotation.ts:153)
 [ ] remove unused variables, particularly _ref type stuff (_j, _len1 on lineAnnotation.ts:325)
 [ ] I don't think TPA considers static variables
-[O] .forEach() lambdas need to have their variables declared in the enclosing scope (spreadsheet/grid.ts:449)
+[X] .forEach() lambdas need to have their variables declared in the enclosing scope (spreadsheet/grid.ts:449)
 [X] samples/j.coffee -- d is never defined?
 
 
