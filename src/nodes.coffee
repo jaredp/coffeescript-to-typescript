@@ -2030,6 +2030,12 @@ exports.For = class For extends While
   # It's an expression if we're going to use the ES5 .filter(), .map(), or .forEach()
   isStatement: -> !(not @index and not @object and not @step and not @pattern)
 
+  makeReturn: (res) ->
+    return super if @isStatement()
+    if res
+      new Call new Literal("#{res}.push"), [this]
+    else
+      new Return this
 
   # Welcome to the hairiest method in all of CoffeeScript. Handles the inner
   # loop, filtering, stepping, and result saving for array, object, and range
