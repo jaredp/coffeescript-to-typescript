@@ -2028,8 +2028,8 @@ exports.For = class For extends While
   children: ['body', 'source', 'guard', 'step']
 
   # It's an expression if we're going to use the ES5 .filter(), .map(), or .forEach()
-  # FIXME: not @jumps either, no?
-  isStatement: -> !(not @index and not @object and not @step and not @pattern)
+  isStatement: (o) -> not @shouldUseES5Funcs(o)
+  shouldUseES5Funcs: (o) -> not @index and not @object and not @step and not @pattern and not @jumps(o)
 
   makeReturn: (res) ->
     return super if @isStatement()
@@ -2050,7 +2050,7 @@ exports.For = class For extends While
     scope     = o.scope
     name      = @name  and (@name.compile o, LEVEL_LIST)
 
-    if not @index and not @object and not @step and not @pattern
+    if @shouldUseES5Funcs(o)
       mkLam = (exprs) => new Code([new Param @name], exprs, 'boundfunc')
       mkMCall = (obj, meth, args) => new Call(new Value(obj, [new Access new Literal meth]), args)
       returns = o.level > LEVEL_TOP   # slightly hackish
