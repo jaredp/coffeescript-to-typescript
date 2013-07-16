@@ -1480,11 +1480,12 @@ exports.Code = class Code extends Base
         if param.splat then @makeCode '...' else []
         jsParam
         if param.value then [
-          @makeCode(" = ")
+          @makeCode(" : any = ")
           param.value.compileNode o
         ] else []
       ]
 
+      #FIXME: is this a bug?
       o.scope.parameter fragmentsToText param
 
     wasEmpty = @body.isEmpty()
