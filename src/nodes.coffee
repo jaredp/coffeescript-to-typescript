@@ -1164,7 +1164,9 @@ exports.Class = class Class extends Base
     # add constructor if there isn't one and it's needed to bind functions
     if boundFuncs.length > 0 and not ctor
       ctor = new Code([], new Block(
-        if @parent then [new Call('super', [])]
+        #FIXME: the former, no?
+        #if @parent then [new Call(mkVanillaID("super.apply"), [mkVanillaID("this"), mkVanillaID("arguments")])]
+        if @parent then [new Call(mkVanillaID("super"), [])]
         else []
       ), 'func')
       ctor.isConstructor = yes
@@ -1487,6 +1489,7 @@ exports.Code = class Code extends Base
 
       #FIXME: is this a bug?
       o.scope.parameter fragmentsToText param
+    if @params.length == 0 then params.push @makeCode("...arguments")
 
     wasEmpty = @body.isEmpty()
     @body.expressions.unshift exprs... if exprs.length
