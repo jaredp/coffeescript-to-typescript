@@ -1520,7 +1520,7 @@ exports.Code = class Code extends Base
       else if not @bound
         [@makeCode("function"), argscode, bodycode]
       else if @bound and not @name?
-        if {lamExpr} = @body.isa(new Block([new Return().with(expression: M("lamExpr"))]))
+        if o.scope.isEmpty() and {lamExpr} = @body.isa(new Block([new Return().with(expression: M("lamExpr"))]))
           bodycode = lamExpr.compileNode o
           bodycode = [@makeCode('('), bodycode, @makeCode(')')] if lamExpr instanceof Obj
         [argscode, @makeCode(' => '), bodycode]
@@ -2028,6 +2028,7 @@ exports.For = class For extends While
   children: ['body', 'source', 'guard', 'step']
 
   # It's an expression if we're going to use the ES5 .filter(), .map(), or .forEach()
+  # FIXME: not @jumps either, no?
   isStatement: -> !(not @index and not @object and not @step and not @pattern)
 
   makeReturn: (res) ->

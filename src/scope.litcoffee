@@ -25,6 +25,8 @@ it belongs to.
         @positions = {}
         Scope.root = this unless @parent
 
+      isEmpty: -> (v for v in @variables when v.name isnt 'arguments').length == 0
+
 Adds a new variable or overrides an existing one.
 
       add: (name, type, immediate) ->
