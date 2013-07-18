@@ -21,11 +21,11 @@ where it should declare its variables, and a reference to the function that
 it belongs to.
 
       constructor: (@parent, @expressions, @method) ->
-        @variables = [{name: 'arguments', type: 'arguments'}]
+        @variables = []
         @positions = {}
         Scope.root = this unless @parent
 
-      isEmpty: -> (v for v in @variables when v.name isnt 'arguments').length == 0
+      isEmpty: -> @variables.length == 0
 
 Adds a new variable or overrides an existing one.
 

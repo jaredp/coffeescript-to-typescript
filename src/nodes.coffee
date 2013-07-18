@@ -1163,9 +1163,8 @@ exports.Class = class Class extends Base
 
     # add constructor if there isn't one and it's needed to bind functions
     if boundFuncs.length > 0 and not ctor
+      @variable.warn "generating constructor calling super with probably the wrong number of arguments" if @parent
       ctor = new Code([], new Block(
-        #FIXME: the former, no?
-        #if @parent then [new Call(mkVanillaID("super.apply"), [mkVanillaID("this"), mkVanillaID("arguments")])]
         if @parent then [new Call(mkVanillaID("super"), [])]
         else []
       ), 'func')
@@ -1451,6 +1450,8 @@ exports.Code = class Code extends Base
 
   jumps: NO
 
+
+
   # Compilation creates a new scope unless explicitly asked to share with the
   # outer scope. Handles splat parameters in the parameter list by peeking at
   # the JavaScript `arguments` object. If the function is bound with the `=>`
@@ -1463,6 +1464,28 @@ exports.Code = class Code extends Base
     o.indent            += TAB
     delete o.bare
     delete o.isExistentialEquals
+
+    ###
+    This should be a simple matter of fn() -> fn(...arguments)
+    so that any time the arguments variable is used in the code body,
+    it will be referencing an actual array of the arguments,
+    but tsc generates incorrect code on precisely ...arguments
+    (see tsc workitem #303).
+
+    Instead, we're going to rewrite all 'arguments' with 'args'
+    and hope there's no conflicts, and add a ...args param.
+
+    While we're here, handle what happens when we use arguments and
+    have actual parameters
+    ###
+    @body.traverseChildren false, (node) =>
+      if node instanceof Literal and node.value is 'arguments'
+        @usesImplicitArguments = yes
+        node.value = 'args'
+    if @usesImplicitArguments
+      @warn "implicit `arguments`!" if @params.length > 0
+      @params.push new Param(new Literal("args"), null, on) if @params.length == 0
+
     params = []
     exprs  = []
     @eachParamName (name) -> # this step must be performed before the others
@@ -1487,9 +1510,8 @@ exports.Code = class Code extends Base
         ] else []
       ]
 
-      #FIXME: is this a bug?
+      #FIXME: is this wrong?
       o.scope.parameter fragmentsToText param
-    if @params.length == 0 then params.push @makeCode("...arguments")
 
     wasEmpty = @body.isEmpty()
     @body.expressions.unshift exprs... if exprs.length
