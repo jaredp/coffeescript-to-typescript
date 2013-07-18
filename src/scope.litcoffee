@@ -25,7 +25,7 @@ it belongs to.
         @positions = {}
         Scope.root = this unless @parent
 
-      isEmpty: -> @variables.length == 0
+      hasNoLocals: -> (v for v in @variables when v.type isnt 'param').length is 0
 
 Adds a new variable or overrides an existing one.
 

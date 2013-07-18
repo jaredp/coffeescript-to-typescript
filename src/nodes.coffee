@@ -1486,6 +1486,8 @@ exports.Code = class Code extends Base
       @warn "implicit `arguments`!" if @params.length > 0
       @params.push new Param(new Literal("args"), null, on) if @params.length == 0
 
+    usesThis = @body.contains (n)=>n instanceof Literal and n.value is 'this'
+
     params = []
     exprs  = []
     @eachParamName (name) -> # this step must be performed before the others
@@ -1538,22 +1540,24 @@ exports.Code = class Code extends Base
       @makeCode '}'
     ]
 
+    bound = @bound or not usesThis
     answer = flatten (
       if @isMethod
         [@name.compileNode(o), argscode, bodycode]
+      else if bound and not @name?
+        if o.scope.hasNoLocals() and {lamExpr} = @body.isa(new Block([new Return().with(expression: M("lamExpr"))]))
+          bodycode = lamExpr.match [
+            Obj, new Value(Obj), => [@makeCode('('), lamExpr.compileNode(o), @makeCode(')')]
+            any, => lamExpr.compileNode(o)
+          ]
+        [argscode, @makeCode(' => '), bodycode]
       else if @name? and not @bound
         [@makeCode("#{@tab}function "), @name.compileNode(o), argscode, bodycode]
       else if not @bound
         [@makeCode("function"), argscode, bodycode]
-      else if @bound and not @name?
-        if o.scope.isEmpty() and {lamExpr} = @body.isa(new Block([new Return().with(expression: M("lamExpr"))]))
-          bodycode = lamExpr.compileNode o
-          bodycode = [@makeCode('('), bodycode, @makeCode(')')] if lamExpr instanceof Obj
-        [argscode, @makeCode(' => '), bodycode]
-      else if @bound and @name?
+      else
         @nogen "bound non-method function has a name (internal compiler error)"
     )
-
     if @front or (o.level >= LEVEL_ACCESS) then @wrapInBraces answer else answer
 
   eachParamName: (iterator) ->
@@ -2055,7 +2059,9 @@ exports.For = class For extends While
 
   # It's an expression if we're going to use the ES5 .filter(), .map(), or .forEach()
   isStatement: (o) -> not @shouldUseES5Funcs(o)
-  shouldUseES5Funcs: (o) -> not @index and not @object and not @step and not @pattern and not @jumps(o)
+
+  # FIXME: o can change @jumps, so inconsistant!!
+  shouldUseES5Funcs: (o) -> not @index and not @object and not @step and not @pattern #and not @jumps(o)
 
   makeReturn: (res) ->
     return super if @isStatement()
