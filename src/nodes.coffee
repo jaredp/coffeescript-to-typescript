@@ -1459,8 +1459,8 @@ exports.Code = class Code extends Base
   # a closure.
   compileNode: (o) ->
     o.scope             = new Scope o.scope, @body, this
-    o.scope.shared      = del(o, 'sharedScope')
-    o.scope.undeclared  = del(o, 'undeclaredScope')
+    o.scope.shared      = del(o, 'sharedScope') or @sharedScope
+    o.scope.undeclared  = @undeclaredScope
     o.indent            += TAB
     delete o.bare
     delete o.isExistentialEquals
@@ -2057,19 +2057,6 @@ exports.For = class For extends While
 
   children: ['body', 'source', 'guard', 'step']
 
-  # It's an expression if we're going to use the ES5 .filter(), .map(), or .forEach()
-  isStatement: (o) -> not @shouldUseES5Funcs(o)
-
-  # FIXME: o can change @jumps, so inconsistant!!
-  shouldUseES5Funcs: (o) -> not @index and not @object and not @step and not @pattern #and not @jumps(o)
-
-  makeReturn: (res) ->
-    return super if @isStatement()
-    if res
-      new Call new Literal("#{res}.push"), [this]
-    else
-      new Return this
-
   # Welcome to the hairiest method in all of CoffeeScript. Handles the inner
   # loop, filtering, stepping, and result saving for array, object, and range
   # comprehensions. Some of the generated code can be shared in common, and
@@ -2081,17 +2068,6 @@ exports.For = class For extends While
     source    = if @range then @source.base else @source
     scope     = o.scope
     name      = @name  and (@name.compile o, LEVEL_LIST)
-
-    if @shouldUseES5Funcs(o)
-      mkLam = (exprs) => new Code([new Param @name], exprs, 'boundfunc')
-      mkMCall = (obj, meth, args) => new Call(new Value(obj, [new Access new Literal meth]), args)
-      returns = o.level > LEVEL_TOP   # slightly hackish
-
-      comprehension = source
-      comprehension = mkMCall comprehension, "filter", [mkLam Block.wrap [new Return @guard]] if @guard
-      comprehension = mkMCall comprehension, (if returns then "map" else "forEach"), [mkLam @body]
-      return comprehension.compileToFragments merge(o, sharedScope: yes, undeclaredScope: yes)
-
     index     = @index and (@index.compile o, LEVEL_LIST)
     scope.find(name)  if name and not @pattern
     scope.find(index) if index

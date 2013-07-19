@@ -9,6 +9,7 @@ path          = require 'path'
 child_process = require 'child_process'
 {Lexer}       = require './lexer'
 {parser}      = require './parser'
+{toSAST}      = require './transformer'
 helpers       = require './helpers'
 SourceMap     = require './sourcemap'
 
@@ -37,7 +38,10 @@ exports.compile = compile = (code, options = {}) ->
   if options.sourceMap
     map = new SourceMap
 
-  fragments = parser.parse(lexer.tokenize code, options).compileToFragments options
+  lexemes = lexer.tokenize code
+  ast = parser.parse(lexemes, options)
+  sast = toSAST(ast)
+  fragments = sast.compileToFragments options
 
   # sanity check; very useful for debugging compiler
   for fragment in fragments
