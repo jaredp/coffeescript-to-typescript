@@ -25,7 +25,8 @@ apply = (transformers) -> (node) ->
   node = new transformer().runOn(node) for transformer in transformers
   return node
 
-
+# TODO: add make return
+# TODO: add options parameter, like isBlockLevel
 # TODO: add function definitions
 # TODO: move AMD defines here
 

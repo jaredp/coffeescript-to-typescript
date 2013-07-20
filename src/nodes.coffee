@@ -1161,32 +1161,37 @@ exports.Class = class Class extends Base
       else
         addMember node
 
-    # add constructor if there isn't one and it's needed to bind functions
-    if boundFuncs.length > 0 and not ctor
-      @variable.warn "generating constructor calling super with probably the wrong number of arguments" if @parent
-      ctor = new Code([], new Block(
-        if @parent then [new Call(mkVanillaID("super"), [])]
-        else []
-      ), 'func')
-      ctor.isConstructor = yes
-      members.unshift new Assign(new Value(new Literal("constructor")), ctor, 'object')
+    shouldPutBindingsInConstructors = no
+    if shouldPutBindingsInConstructors
+      members = members.concat @genConstructor(ctor, boundFuncs)
+    else
+      b.warn "bound methods are not supported in TypeScript" for b in boundFuncs
+    members
 
-    # bind members after super call
-    if ctor and ctor.body.expressions.length > 0
-      possiblySuperCall = ctor.body.expressions.shift()
-      if possiblySuperCall instanceof Call and possiblySuperCall.isSuper
-        sCall = possiblySuperCall
-      else
-        ctor.body.expressions.unshift possiblySuperCall
+  genConstructor: (ctor, boundFuncs) ->
+    # add constructor if there isn't one and it's needed to bind functions
+    return [] if boundFuncs.length == 0
+    unless ctor
+      fakeConstructor = yes
+      @variable.warn "generating constructor calling super with probably the wrong number of arguments" if @parent
+
+      ctor = new Code([], new Block([]), 'func')
+      ctor.isConstructor = yes
+      sCall = new Call(mkVanillaID("super"), []) if @parent
+
+    else if ctor.body.expressions[0]?.isSuper
+      sCall = ctor.body.expressions.shift()
 
     # bind the members
     for bvar in boundFuncs
-      lhs = (new Value (new Literal "this"), [new Access bvar]).compile o
+      lhs = "this.#{bvar.compile({})}"
       ctor.body.expressions.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
 
     ctor.body.expressions.unshift sCall if sCall?
 
-    members
+    if fakeConstructor
+      new Assign(new Value(new Literal("constructor")), ctor, 'object')
+    else []
 
   # Instead of generating the JavaScript string directly, we build up the
   # equivalent syntax tree and compile that, in pieces. You can see the
