@@ -381,11 +381,13 @@ exports.Block = class Block extends Base
         compiledNodes.push node.compileNode o
       else if top
         node.front = true
-        fragments = node.compileToFragments o
         if @exportAll then node.match [  # add assignment in here
-          Class, Code, new Assign(any, any).when((a)->a.isCodeDef()), () =>
-            fragments.unshift @makeCode "export "
+          M("exported", Class), M("exported", Code)
+          new Assign(any, M("exported", Code)).when((a)->a.isCodeDef())
+          ({exported}) =>
+            exported.shouldExport = yes
         ]
+        fragments = node.compileToFragments o
         unless node.isStatement o
           fragments.unshift @makeCode "#{@tab}"
           fragments.push @makeCode ";"
@@ -1205,6 +1207,7 @@ exports.Class = class Class extends Base
     prelude = []
     declaration = [
       @makeCode indent
+      @makeCode if @shouldExport then "export " else ""
       @makeCode "class #{name}"
       if @parent then [
         @makeCode( " extends "),
@@ -1557,7 +1560,8 @@ exports.Code = class Code extends Base
           ]
         [argscode, @makeCode(' => '), bodycode]
       else if @name? and not @bound
-        [@makeCode("#{@tab}function "), @name.compileNode(o), argscode, bodycode]
+        exportFlag = if @shouldExport then "export " else ""
+        [@makeCode("#{@tab}#{exportFlag}function "), @name.compileNode(o), argscode, bodycode]
       else if not @bound
         [@makeCode("function"), argscode, bodycode]
       else
