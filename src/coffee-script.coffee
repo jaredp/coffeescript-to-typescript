@@ -79,6 +79,7 @@ exports.compile = compile = (code, options = {}) ->
     answer = {js}
     answer.sourceMap = map
     answer.v3SourceMap = map.generate(options, code)
+    answer.sourceMapHash = map.generateHash(options, code)
     answer
   else
     js

@@ -70,7 +70,7 @@ Builds up a V3 source map, returning the generated JSON as a string.
 map.  Also, `options.sourceFiles` and `options.generatedFile` may be passed to
 set "sources" and "file", respectively.
 
-      generate: (options = {}, code = null) ->
+      generateHash: (options = {}, code = null) ->
         writingline       = 0
         lastColumn        = 0
         lastSourceLine    = 0
@@ -128,8 +128,12 @@ Produce the canonical JSON object format for a "v3" source map.
 
         v3.sourcesContent = [code] if options.inline
 
-        JSON.stringify v3, null, 2
+        return v3
 
+
+      generate: (options = {}, code = null) ->
+        v3 = @generateHash options, code
+        JSON.stringify v3, null, 2
 
 Base64 VLQ Encoding
 -------------------
