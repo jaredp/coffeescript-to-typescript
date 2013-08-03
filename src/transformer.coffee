@@ -2,7 +2,7 @@
 underscore = require 'underscore'
 { Base, Return, Call, Code, Param, Class, Block,
   For, Value, Access, Literal,
-  LEVEL_TOP } = require './nodes'
+  any, LEVEL_TOP } = require './nodes'
 
 class Transformer
   on:           (node) -> yes
@@ -32,7 +32,14 @@ apply = (transformers) -> (node) ->
 # TODO: move AMD defines here
 
 class UseES5MethodsInsteadOfForLoops extends Transformer
-  on: (f) => f instanceof For and not (f.index or f.object or f.step or f.pattern or f.jumps())
+  on: (f) =>
+    f instanceof For and not (
+      f.index or f.object or f.step or f.pattern or f.jumps() or f.contains (n) -> n.match [
+        new Literal("continue"), new Literal("break"), -> yes
+        any, -> no
+      ]
+    )
+
   transform: (f) =>
     mkMCall = (obj, meth, args) -> new Call(new Value(obj, [new Access new Literal meth]), args)
     mkLam = (exprs) ->
