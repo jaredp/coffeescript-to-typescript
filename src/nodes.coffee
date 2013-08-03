@@ -2358,7 +2358,7 @@ UTILITIES =
 
 # Levels indicate a node's position in the AST. Useful for knowing if
 # parens are necessary or superfluous.
-LEVEL_TOP    = 1  # ...;
+LEVEL_TOP = exports.LEVEL_TOP = 1  # ...;
 LEVEL_PAREN  = 2  # (...)
 LEVEL_LIST   = 3  # [...]
 LEVEL_COND   = 4  # ... ? x : y

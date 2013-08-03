@@ -1,7 +1,8 @@
 
 underscore = require 'underscore'
 { Base, Return, Call, Code, Param, Class, Block,
-  For, Value, Access, Literal } = require './nodes'
+  For, Value, Access, Literal,
+  LEVEL_TOP } = require './nodes'
 
 class Transformer
   on:           (node) -> yes
@@ -35,16 +36,30 @@ class UseES5MethodsInsteadOfForLoops extends Transformer
   transform: (f) =>
     mkMCall = (obj, meth, args) -> new Call(new Value(obj, [new Access new Literal meth]), args)
     mkLam = (exprs) ->
-      lam = new Code([new Param f.name], exprs, 'boundfunc')
+      lam = new Code([new Param f.name], Block.wrap([exprs]), 'boundfunc')
       lam.undeclaredScope = lam.sharedScope = on
       return lam
 
-    returnsValue = yes    # FIXME: should probably look at if our supernode is Block[]
-    mapMeth = if returnsValue then "map" else "forEach"
+    unless f.guard
+      comprehension = f.source
+    else
+      comprehension = mkMCall f.source, "filter", [mkLam Block.wrap [new Return(f.guard)]]
 
-    comprehension = f.source
-    comprehension = mkMCall comprehension, "filter", [mkLam Block.wrap [new Return(f.guard)]] if f.guard
-    mkMCall comprehension, mapMeth, [mkLam f.body]
+    new ES5For(comprehension, f.name, f.body)
+
+class ES5For extends Call
+  constructor: (@loopSource, name, body) ->
+    @forBody = new Code([new Param name], Block.wrap([body]), 'boundfunc')
+    @forBody.undeclaredScope = @forBody.sharedScope = on
+    super new Value(loopSource, [new Access new Literal "map"]), [@forBody]
+
+  compileNode: (o) ->
+    return super unless o.level == LEVEL_TOP
+    new Call(
+      new Value(@loopSource, [new Access new Literal "forEach"]),
+      [@forBody]
+    ).compileNode o
+
 
 exports.toSAST = toSAST = apply [
     UseES5MethodsInsteadOfForLoops
