@@ -78,15 +78,9 @@ grammar =
 
   # Any list of statements and expressions, separated by line breaks or semicolons.
   Body: [
-    o 'Line', ->
-          Block.wrap [$1]
-    o 'Body TERMINATOR Line', ->
-          if $2? and $2 > 1 then $1.push new Newline
-          $1.push $3
-          return $1
-    o 'Body TERMINATOR', ->
-          if $2? and $2 > 1 then $1.push new Newline
-          return $1
+    o 'Line',                                   -> Block.wrap [$1]
+    o 'Body TERMINATOR Line',                   -> yy.Newline.extra($1, $2); $1.push $3; $1
+    o 'Body TERMINATOR',                        -> yy.Newline.extra($1, $2); $1
   ]
 
   # Block and statements, which make up a line in a body.

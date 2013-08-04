@@ -747,6 +747,7 @@ exports.Comment = class Comment extends Base
     [@makeCode(code)]
 
 exports.Newline = class Newline extends Comment
+  @extra: (block, lines = 1) -> if lines > 1 then block.push new Newline()
   compileNode: -> @makeCode ""
 
 #### Call
