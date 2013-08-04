@@ -311,11 +311,12 @@ exports.Lexer = class Lexer
   lineToken: ->
     return 0 unless match = MULTI_DENT.exec @chunk
     indent = match[0]
+    newlines = indent.match(/\n/g).length
     @seenFor = no
     size = indent.length - 1 - indent.lastIndexOf '\n'
     noNewlines = @unfinished()
     if size - @indebt is @indent
-      if noNewlines then @suppressNewlines() else @newlineToken 0
+      if noNewlines then @suppressNewlines() else @newlineToken 0, newlines
       return indent.length
 
     if size > @indent
@@ -335,13 +336,13 @@ exports.Lexer = class Lexer
       @error 'missing indentation', indent.length
     else
       @indebt = 0
-      @outdentToken @indent - size, noNewlines, indent.length
+      @outdentToken @indent - size, noNewlines, indent.length, newlines
     @indent = size
     indent.length
 
   # Record an outdent token or multiple tokens, if we happen to be moving back
   # inwards past several recorded indents.
-  outdentToken: (moveOut, noNewlines, outdentLength) ->
+  outdentToken: (moveOut, noNewlines, outdentLength, lines) ->
     while moveOut > 0
       len = @indents.length - 1
       if @indents[len] is undefined
@@ -361,7 +362,7 @@ exports.Lexer = class Lexer
     @outdebt -= moveOut if dent
     @tokens.pop() while @value() is ';'
 
-    @token 'TERMINATOR', '\n', outdentLength, 0 unless @tag() is 'TERMINATOR' or noNewlines
+    @token 'TERMINATOR', lines, outdentLength, 0 unless @tag() is 'TERMINATOR' or noNewlines
     this
 
   # Matches and consumes non-meaningful whitespace. Tag the previous token
@@ -374,9 +375,9 @@ exports.Lexer = class Lexer
     if match then match[0].length else 0
 
   # Generate a newline token. Consecutive newlines get merged together.
-  newlineToken: (offset) ->
+  newlineToken: (offset, lines=1) ->
     @tokens.pop() while @value() is ';'
-    @token 'TERMINATOR', '\n', offset, 0 unless @tag() is 'TERMINATOR'
+    @token 'TERMINATOR', lines, offset, 0 unless @tag() is 'TERMINATOR'
     this
 
   # Use a `\` at a line-ending to suppress the newline.

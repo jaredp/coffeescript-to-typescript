@@ -746,6 +746,9 @@ exports.Comment = class Comment extends Base
     code = o.indent + code if (level or o.level) is LEVEL_TOP
     [@makeCode("\n"), @makeCode(code)]
 
+exports.Newline = class Newline extends Comment
+  compileNode: -> @makeCode ""
+
 #### Call
 
 # Node for a function invocation. Takes care of converting `super()` calls into
