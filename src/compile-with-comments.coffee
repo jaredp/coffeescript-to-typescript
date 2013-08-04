@@ -43,4 +43,8 @@ exports.unmakeFakeblocks = (code) ->
   code = code.replace /\/\*(([\n\r]|.)*?)\*\//g, (match) ->
     match.replace(/(\n\s*)#/g, "$1//")
 
-  code.replace /\n\s*\/\*fakeblock(([\n\r]|.)*?)\n\s*\*\//g, "$1"
+  code.replace ///
+    [^\S\n]*/\*fakeblock\n
+    (([\n\r]|.)*?\n)
+    [^\S\n]*\*/\n
+  ///g, "$1"

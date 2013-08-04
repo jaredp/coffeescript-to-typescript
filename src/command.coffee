@@ -144,21 +144,25 @@ compileScript = (file, input, base=null) ->
   try
     t = task = {file, input, options}
     CoffeeScript.emit 'compile', task
-    if      o.tokens      then printTokens CoffeeScript.tokens t.input, t.options
-    else if o.nodes       then printLine CoffeeScript.nodes(t.input, t.options).toString().trim()
-    else if o.run         then CoffeeScript.run t.input, t.options
+
+    if o.addcomments
+      source = FakeBlock.makeFakeblocks t.input
+    else
+      source = t.input
+
+    if      o.tokens      then printTokens CoffeeScript.tokens source, t.options
+    else if o.nodes       then printLine CoffeeScript.nodes(source, t.options).toString().trim()
+    else if o.run         then CoffeeScript.run source, t.options
     else if o.join and t.file isnt o.join
       t.input = helpers.invertLiterate t.input if helpers.isLiterate file
       sourceCode[sources.indexOf(t.file)] = t.input
       compileJoin()
     else
+      compiled = CoffeeScript.compile source, t.options
       if o.addcomments
-        source = FakeBlock.makeFakeblocks t.input
-        compiled = CoffeeScript.compile source, t.options
         output = reAddComments(compiled.js, source, compiled.sourceMapHash)
         t.output = FakeBlock.unmakeFakeblocks output
       else
-        compiled = CoffeeScript.compile t.input, t.options
         t.output = compiled
         if o.map
           t.output = compiled.js

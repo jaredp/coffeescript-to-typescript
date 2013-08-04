@@ -396,7 +396,7 @@ exports.Block = class Block extends Base
         compiledNodes.push node.compileToFragments o, LEVEL_LIST
     if top
       if @spaced
-        return [].concat @joinFragmentArrays(compiledNodes, '\n\n'), @makeCode("\n")
+        return [].concat @joinFragmentArrays(compiledNodes, '\n'), @makeCode("\n")
       else
         return @joinFragmentArrays(compiledNodes, '\n')
     if compiledNodes.length
@@ -744,7 +744,7 @@ exports.Comment = class Comment extends Base
   compileNode: (o, level) ->
     code = "/*#{multident @comment, @tab}#{if '\n' in @comment then "\n#{@tab}" else ''}*/"
     code = o.indent + code if (level or o.level) is LEVEL_TOP
-    [@makeCode("\n"), @makeCode(code)]
+    [@makeCode(code)]
 
 exports.Newline = class Newline extends Comment
   compileNode: -> @makeCode ""
