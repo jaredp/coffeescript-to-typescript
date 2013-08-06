@@ -1555,7 +1555,7 @@ exports.Code = class Code extends Base
     bound = @bound or not usesThis
     answer = flatten (
       if @isMethod
-        [@name.compileNode(o), argscode, bodycode]
+        [@name.compileNode(o), argscode, @makeCode(" "), bodycode]
       else if bound and not @name?
         if o.scope.hasNoLocals() and {lamExpr} = @body.isa(new Block([new Return().with(expression: M("lamExpr"))]))
           bodycode = lamExpr.match [
@@ -1565,9 +1565,9 @@ exports.Code = class Code extends Base
         [argscode, @makeCode(' => '), bodycode]
       else if @name? and not @bound
         exportFlag = if @shouldExport then "export " else ""
-        [@makeCode("#{@tab}#{exportFlag}function "), @name.compileNode(o), argscode, bodycode]
+        [@makeCode("#{@tab}#{exportFlag}function "), @name.compileNode(o), argscode, @makeCode(" "), bodycode]
       else if not @bound
-        [@makeCode("function"), argscode, bodycode]
+        [@makeCode("function"), argscode, @makeCode(" "), bodycode]
       else
         @nogen "bound non-method function has a name (internal compiler error)"
     )
@@ -2370,7 +2370,7 @@ LEVEL_OP     = 5  # !...
 LEVEL_ACCESS = 6  # ...[0]
 
 # Tabs are two spaces for pretty printing.
-TAB = '  '
+TAB = '    '
 
 IDENTIFIER_STR = "[$A-Za-z_\\x7f-\\uffff][$\\w\\x7f-\\uffff]*"
 IDENTIFIER = /// ^ #{IDENTIFIER_STR} $ ///
