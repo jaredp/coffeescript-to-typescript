@@ -138,7 +138,7 @@ compilePath = (source, topLevel, base) ->
 # requested options. If evaluating the script directly sets `__filename`,
 # `__dirname` and `module.filename` to be correct relative to the script's path.
 compileScript = (file, input, base=null) ->
-  setTranslatingFile file
+  setTranslatingFile file, input
   o = opts
   options = compileOptions file, base
   try
