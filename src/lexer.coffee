@@ -570,7 +570,7 @@ exports.Lexer = class Lexer
     return @token 'STRING', '""', offsetInChunk, lexedLength unless tokens.length
 
     # If the first token is not a string, add a fake empty string to the beginning.
-    tokens.unshift @makeToken('NEOSTRING', '', offsetInChunk) unless tokens[0][0] is 'NEOSTRING'
+    #tokens.unshift @makeToken('NEOSTRING', '', offsetInChunk) unless tokens[0][0] is 'NEOSTRING'
 
     @token '(', '(', offsetInChunk, 0 if interpolated = tokens.length > 1
     # Push all the tokens
