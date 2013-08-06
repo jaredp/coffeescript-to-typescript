@@ -235,6 +235,7 @@ exports.Base = class Base
 
   matchedAttributes: []
 
+  patternMatchingGuard: -> yes
   when: (@patternMatchingGuard) -> this
 
   probablyPure: -> probablyPure(this)
@@ -259,17 +260,12 @@ exports.matchNode = matchNode = (pattern, node, match) ->
     matchNode(pattern.subpattern, node, match) if pattern.subpattern
 
   else if pattern instanceof AnyMatch
-    return yes
+    yes
 
   else if pattern instanceof Base
     throw "match failed" unless node instanceof pattern.constructor
     for attr in pattern.children.concat pattern.matchedAttributes
       matchNode(pattern[attr], node[attr], match)
-    if pattern.patternMatchingGuard
-      caps = pattern.patternMatchingGuard(node, match)
-      if caps == yes then return yes
-      if caps == no then throw "match failed"
-      underscore.extend(match, caps)
 
   else if underscore.isArray(pattern)
     throw "match failed" unless underscore.isArray(node)
@@ -285,6 +281,13 @@ exports.matchNode = matchNode = (pattern, node, match) ->
   else
     if node != pattern
       throw "match failed"
+
+  if pattern.patternMatchingGuard?
+    caps = pattern.patternMatchingGuard(node, match)
+    if caps == yes then return yes
+    if caps == no then throw "match failed"
+    underscore.extend(match, caps)
+
 
 class MatchCapture extends Base
   constructor: (@name, @subpattern) ->
