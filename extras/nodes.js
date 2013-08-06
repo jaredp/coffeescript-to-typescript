@@ -463,11 +463,11 @@ var exports = {}, module = {exports: exports};  var Access, AnyMatch, Arr, Assig
       }, new Value(M("base"), M("props")), function(_arg) {
         var base, props;
         base = _arg.base, props = _arg.props;
-        return probablyPure(base && underscore.every(props, function(access) {
+        return probablyPure(base) && underscore.every(props, function(access) {
           return access.isa(new Access(Literal)["with"]({
             soak: false
           }));
-        }));
+        });
       }, any, function() {
         return false;
       }
@@ -1109,10 +1109,14 @@ var exports = {}, module = {exports: exports};  var Access, AnyMatch, Arr, Assig
           prop.soak = false;
           fst = new Value(_this.base, _this.properties.slice(0, i));
           snd = new Value(_this.base, _this.properties.slice(i));
-          if (fst.isComplex() && !fst.probablyPure()) {
-            ref = new Literal(o.scope.freeVariable('ref'));
-            fst = new Parens(new Assign(ref, fst));
-            snd.base = ref;
+          if (fst.isComplex()) {
+            if (fst.probablyPure()) {
+              snd.base = fst;
+            } else {
+              ref = new Literal(o.scope.freeVariable('ref'));
+              fst = new Parens(new Assign(ref, fst));
+              snd.base = ref;
+            }
           }
           return new If(new Existence(fst), snd, {
             soak: true
@@ -2137,7 +2141,7 @@ var exports = {}, module = {exports: exports};  var Access, AnyMatch, Arr, Assig
       argscode = [this.makeCode('('), this.joinFragmentArrays(params, ', '), this.makeCode(')')];
       bodycode = [this.makeCode('{'), !this.body.isEmpty() ? [this.makeCode("\n"), this.body.compileWithDeclarations(o), this.makeCode("\n" + this.tab)] : [], this.makeCode('}')];
       bound = this.bound || !usesThis;
-      answer = flatten((this.isMethod ? [this.name.compileNode(o), argscode, bodycode] : bound && (this.name == null) ? (o.scope.hasNoLocals() && (_ref8 = this.body.isa(new Block([
+      answer = flatten((this.isMethod ? [this.name.compileNode(o), argscode, this.makeCode(" "), bodycode] : bound && (this.name == null) ? (o.scope.hasNoLocals() && (_ref8 = this.body.isa(new Block([
         new Return()["with"]({
           expression: M("lamExpr")
         })
@@ -2147,7 +2151,7 @@ var exports = {}, module = {exports: exports};  var Access, AnyMatch, Arr, Assig
         }, any, function() {
           return lamExpr.compileNode(o);
         }
-      ]) : void 0, [argscode, this.makeCode(' => '), bodycode]) : (this.name != null) && !this.bound ? (exportFlag = this.shouldExport ? "export " : "", [this.makeCode("" + this.tab + exportFlag + "function "), this.name.compileNode(o), argscode, bodycode]) : !this.bound ? [this.makeCode("function"), argscode, bodycode] : this.nogen("bound non-method function has a name (internal compiler error)")));
+      ]) : void 0, [argscode, this.makeCode(' => '), bodycode]) : (this.name != null) && !this.bound ? (exportFlag = this.shouldExport ? "export " : "", [this.makeCode("" + this.tab + exportFlag + "function "), this.name.compileNode(o), argscode, this.makeCode(" "), bodycode]) : !this.bound ? [this.makeCode("function"), argscode, this.makeCode(" "), bodycode] : this.nogen("bound non-method function has a name (internal compiler error)")));
       if (this.front || (o.level >= LEVEL_ACCESS)) {
         return this.wrapInBraces(answer);
       } else {
@@ -3280,7 +3284,7 @@ var exports = {}, module = {exports: exports};  var Access, AnyMatch, Arr, Assig
 
   LEVEL_ACCESS = 6;
 
-  TAB = '  ';
+  TAB = '    ';
 
   IDENTIFIER_STR = "[$A-Za-z_\\x7f-\\uffff][$\\w\\x7f-\\uffff]*";
 

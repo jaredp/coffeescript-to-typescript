@@ -237,6 +237,8 @@ exports.Base = class Base
 
   when: (@patternMatchingGuard) -> this
 
+  probablyPure: -> probablyPure(this)
+
 # Pattern matching utilities
 isMatchPattern = (p) -> p instanceof Base or p.isNodeClass
 
@@ -302,6 +304,30 @@ exports.atProperty = atProperty = (expr) ->
   else
     no
 
+#### Probably Pure
+# does the expression `probably` not have side effects?
+# language's can have weird hooks for things like, in js, accessors,
+# which means that even a simple foo.bar can call a method which has
+# a side effect, so writing foo.bar twice has a different effect than
+# ref = foo.bar, ...ref...
+# While it is possible to do analysis (sometimes) to figure out if this will not
+# happen, this analysis is `hard.`  Instead, probablyPure is here to identify
+# expressions that should have no side effects (and are hopefully idempotent if they do)
+#
+# probably pure currently looks for:
+# pp :: LITERAL
+# pp :: pp.LITERAL
+# and should support:
+# pp :: foo[pp]
+
+probablyPure = (expr) ->
+  expr.match [
+    Literal, -> yes
+    new Value(M("base"), M("props")), ({base, props}) ->
+      probablyPure(base) and underscore.every props, (access) ->
+        access.isa new Access(Literal).with(soak:no)
+    any, -> no
+  ]
 
 #### Block
 
@@ -725,9 +751,12 @@ exports.Value = class Value extends Base
         fst = new Value @base, @properties[...i]
         snd = new Value @base, @properties[i..]
         if fst.isComplex()
-          ref = new Literal o.scope.freeVariable 'ref'
-          fst = new Parens new Assign ref, fst
-          snd.base = ref
+          if fst.probablyPure()
+            snd.base = fst
+          else
+            ref = new Literal o.scope.freeVariable 'ref'
+            fst = new Parens new Assign ref, fst
+            snd.base = ref
         return new If new Existence(fst), snd, soak: on
       no
 
