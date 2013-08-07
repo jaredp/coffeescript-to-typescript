@@ -1177,59 +1177,6 @@ exports.Class = class Class extends Base
       @variable.error "class variable name may not be #{decl}"
     decl and= IDENTIFIER.test(decl) and decl
 
-  getMembers: (o) ->
-    members = []
-    boundFuncs = []
-    ctor = null
-
-    addMember = (member)->
-      members.push member
-      if (assign = member) instanceof Assign
-        if assign.variable.isNamed "constructor"
-          ctor = assign.value
-          ctor.isConstructor = yes
-        else if assign.value instanceof Code and assign.value.bound
-          boundFuncs.push assign.variable
-          assign.value.bound = no
-
-    for node in @body.expressions
-      if node instanceof Value and node.base instanceof Object
-        for assign in node.base.properties
-          addMember assign
-      else
-        addMember node
-
-    shouldPutBindingsInConstructors = no
-    if shouldPutBindingsInConstructors
-      members = members.concat @genConstructor(ctor, boundFuncs)
-    else
-      b.warn "bound methods are not supported in TypeScript" for b in boundFuncs
-    members
-
-  genConstructor: (ctor, boundFuncs) ->
-    # add constructor if there isn't one and it's needed to bind functions
-    return [] if boundFuncs.length == 0
-    unless ctor
-      fakeConstructor = yes
-      @variable.warn "generating constructor calling super with probably the wrong number of arguments" if @parent
-
-      ctor = new Code([], new Block([]), 'func')
-      ctor.isConstructor = yes
-      sCall = new Call(mkVanillaID("super"), []) if @parent
-
-    else if ctor.body.expressions[0]?.isSuper
-      sCall = ctor.body.expressions.shift()
-
-    # bind the members
-    for bvar in boundFuncs
-      lhs = "this.#{bvar.compile({})}"
-      ctor.body.expressions.unshift new Literal "#{lhs} = #{utility 'bind'}(#{lhs}, this)"
-
-    ctor.body.expressions.unshift sCall if sCall?
-
-    if fakeConstructor
-      new Assign(new Value(new Literal("constructor")), ctor, 'object')
-    else []
 
   # Instead of generating the JavaScript string directly, we build up the
   # equivalent syntax tree and compile that, in pieces. You can see the
@@ -1256,7 +1203,17 @@ exports.Class = class Class extends Base
     _o = o
     o = merge o, indent: o.indent + TAB
 
-    members = for assign in @getMembers(o)
+    memberDecls = flatten (for node in @body.expressions
+      if node instanceof Value and node.base instanceof Obj
+        node.base.properties
+      else
+        node
+    )
+    for member in memberDecls
+      if {ctor} = member.isa(new Assign(mkVanillaID('constructor'), M("ctor", Code)))
+        ctor.isConstructor = yes
+
+    members = for assign in memberDecls
       if assign not instanceof Assign
         assign.compileToFragments o
       else
