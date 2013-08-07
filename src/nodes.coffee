@@ -1543,8 +1543,10 @@ exports.Code = class Code extends Base
 
     bound = @bound or not usesThis
     answer = flatten (
-      if @isMethod
+      if @isMethod and not @bound
         [@name.compileNode(o), argscode, @makeCode(" "), bodycode]
+      else if @isMethod and @bound
+        [@name.compileNode(o), @makeCode(" = "), argscode, @makeCode(" => "), bodycode]
       else if bound and not @name?
         if o.scope.hasNoLocals() and {lamExpr} = @body.isa(new Block([new Return().with(expression: M("lamExpr"))]))
           bodycode = lamExpr.match [
