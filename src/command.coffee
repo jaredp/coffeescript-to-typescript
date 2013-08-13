@@ -138,7 +138,6 @@ compilePath = (source, topLevel, base) ->
 # requested options. If evaluating the script directly sets `__filename`,
 # `__dirname` and `module.filename` to be correct relative to the script's path.
 compileScript = (file, input, base=null) ->
-  setTranslatingFile file, input
   o = opts
   options = compileOptions file, base
   try
@@ -149,6 +148,8 @@ compileScript = (file, input, base=null) ->
       source = FakeBlock.makeFakeblocks t.input
     else
       source = t.input
+
+    setTranslatingFile file, source
 
     if      o.tokens      then printTokens CoffeeScript.tokens source, t.options
     else if o.nodes       then printLine CoffeeScript.nodes(source, t.options).toString().trim()

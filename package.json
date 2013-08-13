@@ -28,6 +28,13 @@
     "type": "git",
     "url": "git://github.com/jashkenas/coffee-script.git"
   },
+  "dependencies": {
+    "express": "*",
+    "source-map": "*",
+    "source-map-support": "*",
+    "underscore": "*",
+    "underscore.string": "*"
+  },
   "devDependencies": {
     "uglify-js":  "~2.2",
     "jison":      ">=0.2.0"
