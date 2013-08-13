@@ -480,14 +480,20 @@ exports.Block = class Block extends Base
           # imports
           prelude.push @makeCode("\n")
           for [iport, param] in underscore.zip(mLabels, mNames)
-            prelude = prelude.concat [
-              if param then [@makeCode("import "), param.compileToFragments(o), @makeCode(' = ')] else []
-              @makeCode("require("), iport.compileNode(o), @makeCode(");\n")
-            ]
+            unless param
+              iport.warn "need to declare a parameter for import"
+            else
+              prelude.push [
+                @makeCode "import "
+                param.compileToFragments o
+                @makeCode " = "
+                @makeCode "require("
+                iport.compileNode o
+                @makeCode ");\n"
+              ]
           prelude = flatten prelude
-          underscoreImport =
-          unless /import _ = require\(("underscore)|('underscore')\);\n/.test fragmentsToText prelude
-            prelude.push @makeCode "import _ = require(\"underscore\");\n"
+          unless /import _ = require\("underscore"\);\n/.test fragmentsToText prelude
+            prelude.push @makeCode 'import _ = require("underscore");\n'
 
           prelude.push @makeCode("\n")
 
