@@ -157,6 +157,9 @@ exports.setTranslatingFile = (fname, code) ->
 exports.currentFilename = () -> translating_filename
 
 exports.sendSyntaxWarning = (message, location) ->
+  filter = process.env.COFFEE_WARNING_FILTER
+  return if filter? and filter != "" and message != filter
+
   return if exports.noWarn
   error = new SyntaxError message
   if location
