@@ -614,6 +614,10 @@ exports.Literal = class Literal extends Base
       "\"#{@value}\""
     else
       @value
+
+    if underscore.isString(code) and [m, stringContent] = code.match(/^'(.*)'$/) or no
+      code = "\"#{stringContent.replace(/\\'/g, "'").replace(/"/g, '\\"')}\""
+
     answer = if @isStatement() then "#{@tab}#{code};" else code
     [@makeCode answer]
 
