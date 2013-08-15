@@ -784,7 +784,8 @@ exports.Comment = class Comment extends Base
   makeReturn:      THIS
 
   compileNode: (o, level) ->
-    code = "/*#{multident @comment, @tab}#{if '\n' in @comment then "\n#{@tab}" else ''}*/"
+    unless [isTSCode, code] = @comment.match(/^tsonly-- (.*)$/) or no
+      code = "/*#{multident @comment, @tab}#{if '\n' in @comment then "\n#{@tab}" else ''}*/"
     code = o.indent + code if (level or o.level) is LEVEL_TOP
     [@makeCode(code)]
 
