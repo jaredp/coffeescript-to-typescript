@@ -1050,8 +1050,11 @@ exports.Range = class Range extends Base
       return [@makeCode "[#{ range.join(', ') }]"]
 
     @warn "using _.range(); will not work if left hand side < right"
-    @to = new Op('+', @to, new Literal('1')) unless @exclusive
-    u_range_call = new Call(mkVanillaID('_.range'), [@from, @to])
+    unless @exclusive
+      to = new Op('+', @to, new Literal('1'))
+    else
+      to = @to
+    u_range_call = new Call(mkVanillaID('_.range'), [@from, to])
     return u_range_call.compileNode o
 
 #### Slice
