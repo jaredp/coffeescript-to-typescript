@@ -157,7 +157,7 @@ exports.setTranslatingFile = (fname, code) ->
 exports.currentFilename = () -> translating_filename
 
 exports.sendSyntaxWarning = (message, location) ->
-  filter = process.env.COFFEE_WARNING_FILTER
+  filter = process?.env.COFFEE_WARNING_FILTER
   return if filter? and filter != "" and message != filter
 
   return if exports.noWarn
@@ -181,6 +181,9 @@ exports.sendNotGeneratingWarning = (message, location) ->
 # <filename>:<line>:<col>: <message> plus the line with the error and a marker
 # showing where the error is.
 exports.prettyErrorMessage = (error, filename, code, useColors, errorOrWarn="error") ->
+  unless process?
+    return
+
   return error.stack or "#{error}" unless error.location
   # Prefer original source file information stored in the error if present.
   filename = error.filename or filename

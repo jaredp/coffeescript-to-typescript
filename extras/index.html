@@ -88,12 +88,15 @@
   <script src="nodes.js"></script>
   <script src="transformer.js"></script>
   <script src="coffee-script.js"></script>
+  <script src="compile-with-comments.js"></script>
 
   <script type="text/javascript">
-    var CoffeeScript = require['./coffee-script'];
+    var CoffeeScript = require('./coffee-script');
+    var Fakeblock = require('./compile-with-comments');
 
     function compileSource() {
       source = $('#repl_source').val();
+      source = Fakeblock.makeFakeblocks(source);
       window.compiledJS = CoffeeScript.compile(source, {bare: true});
       $('#repl_results').text(window.compiledJS);
     }
