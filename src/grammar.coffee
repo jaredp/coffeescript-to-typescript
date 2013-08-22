@@ -10,11 +10,8 @@
 # the token sequence against the rules below. When a match can be made, it
 # reduces into the [nonterminal](http://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols)
 # (the enclosing name at the top), and we proceed from there.
-#
-# If you run the `cake build:parser` command, Jison constructs a parse table
-# from our rules and saves it into `lib/parser.js`.
 
-# The only dependency is on the **Jison.Parser**.
+require('underscore').extend(global, require('util'));
 {Parser} = require 'jison'
 
 # Jison DSL

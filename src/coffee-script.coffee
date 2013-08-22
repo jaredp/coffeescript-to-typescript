@@ -3,10 +3,6 @@
 # contains the main entry functions for tokenizing, parsing, and compiling
 # source CoffeeScript into JavaScript.
 
-fs            = require 'fs'
-vm            = require 'vm'
-path          = require 'path'
-child_process = require 'child_process'
 {Lexer}       = require './lexer'
 {parser}      = require './parser'
 {toSAST}      = require './transformer'
@@ -97,128 +93,6 @@ exports.nodes = (source, options) ->
   else
     parser.parse source
 
-# Compile and execute a string of CoffeeScript (on the server), correctly
-# setting `__filename`, `__dirname`, and relative `require()`.
-exports.run = (code, options = {}) ->
-  mainModule = require.main
-
-  # Set the filename.
-  mainModule.filename = process.argv[1] =
-    if options.filename then fs.realpathSync(options.filename) else '.'
-
-  # Clear the module cache.
-  mainModule.moduleCache and= {}
-
-  # Assign paths for node_modules loading
-  mainModule.paths = require('module')._nodeModulePaths path.dirname fs.realpathSync options.filename or '.'
-
-  # Compile.
-  if not helpers.isCoffee(mainModule.filename) or require.extensions
-    answer = compile code, options
-    code = answer.js ? answer
-
-  mainModule._compile code, mainModule.filename
-
-# Compile and evaluate a string of CoffeeScript (in a Node.js-like environment).
-# The CoffeeScript REPL uses this to run the input.
-exports.eval = (code, options = {}) ->
-  return unless code = code.trim()
-  Script = vm.Script
-  if Script
-    if options.sandbox?
-      if options.sandbox instanceof Script.createContext().constructor
-        sandbox = options.sandbox
-      else
-        sandbox = Script.createContext()
-        sandbox[k] = v for own k, v of options.sandbox
-      sandbox.global = sandbox.root = sandbox.GLOBAL = sandbox
-    else
-      sandbox = global
-    sandbox.__filename = options.filename || 'eval'
-    sandbox.__dirname  = path.dirname sandbox.__filename
-    # define module/require only if they chose not to specify their own
-    unless sandbox isnt global or sandbox.module or sandbox.require
-      Module = require 'module'
-      sandbox.module  = _module  = new Module(options.modulename || 'eval')
-      sandbox.require = _require = (path) ->  Module._load path, _module, true
-      _module.filename = sandbox.__filename
-      _require[r] = require[r] for r in Object.getOwnPropertyNames require when r isnt 'paths'
-      # use the same hack node currently uses for their own REPL
-      _require.paths = _module.paths = Module._nodeModulePaths process.cwd()
-      _require.resolve = (request) -> Module._resolveFilename request, _module
-  o = {}
-  o[k] = v for own k, v of options
-  o.bare = on # ensure return value
-  js = compile code, o
-  if sandbox is global
-    vm.runInThisContext js
-  else
-    vm.runInContext js, sandbox
-
-compileFile = (filename, sourceMap) ->
-  raw = fs.readFileSync filename, 'utf8'
-  stripped = if raw.charCodeAt(0) is 0xFEFF then raw.substring 1 else raw
-  setTranslatingFile filename, stripped
-
-  try
-    answer = compile(stripped, {filename, sourceMap, literate: helpers.isLiterate filename})
-  catch err
-    # As the filename and code of a dynamically loaded file will be different
-    # from the original file compiled with CoffeeScript.run, add that
-    # information to error so it can be pretty-printed later.
-    err.filename = filename
-    err.code = stripped
-    helpers.prettyErrorMessage error, filename, stripped, yes
-    answer = ""
-
-  answer
-
-# Load and run a CoffeeScript file for Node, stripping any `BOM`s.
-loadFile = (module, filename) ->
-  answer = compileFile filename, false
-  module._compile answer, filename
-
-# If the installed version of Node supports `require.extensions`, register
-# CoffeeScript as an extension.
-if require.extensions
-  for ext in extensions
-    require.extensions[ext] = loadFile
-
-  # Patch Node's module loader to be able to handle mult-dot extensions.
-  # This is a horrible thing that should not be required. Perhaps, one day,
-  # when a truly benevolent dictator comes to rule over the Republik of Node,
-  # it won't be.
-  Module = require 'module'
-
-  findExtension = (filename) ->
-    extensions = path.basename(filename).split '.'
-    # Remove the initial dot from dotfiles.
-    extensions.shift() if extensions[0] is ''
-    # Start with the longest possible extension and work our way shortwards.
-    while extensions.shift()
-      curExtension = '.' + extensions.join '.'
-      return curExtension if Module._extensions[curExtension]
-    '.js'
-
-  Module::load = (filename) ->
-    @filename = filename
-    @paths = Module._nodeModulePaths path.dirname filename
-    extension = findExtension filename
-    Module._extensions[extension](this, filename)
-    @loaded = true
-
-# If we're on Node, patch `child_process.fork` so that Coffee scripts are able
-# to fork both CoffeeScript files, and JavaScript files, directly.
-if child_process
-  {fork} = child_process
-  child_process.fork = (path, args = [], options = {}) ->
-    execPath = if helpers.isCoffee(path) then 'coffee' else null
-    if not Array.isArray args
-      args = []
-      options = args or {}
-    options.execPath or= execPath
-    fork path, args, options
-
 # Instantiate a Lexer for our use here.
 lexer = new Lexer
 
@@ -304,30 +178,3 @@ formatSourcePosition = (frame, getSourceMapping) ->
     "#{functionName} (#{fileLocation})"
   else
     fileLocation
-
-# Map of filenames -> sourceMap object.
-sourceMaps = {}
-
-# Generates the source map for a coffee file and stores it in the local cache variable.
-getSourceMap = (filename) ->
-  return sourceMaps[filename] if sourceMaps[filename]
-  return unless path?.extname(filename) in extensions
-  answer = compileFile filename, true
-  sourceMaps[filename] = answer.sourceMap
-
-# Based on [michaelficarra/CoffeeScriptRedux](http://goo.gl/ZTx1p)
-# NodeJS / V8 have no support for transforming positions in stack traces using
-# sourceMap, so we must monkey-patch Error to display CoffeeScript source
-# positions.
-Error.prepareStackTrace = (err, stack) ->
-  getSourceMapping = (filename, line, column) ->
-    sourceMap = getSourceMap filename
-    answer = sourceMap.sourceLocation [line - 1, column - 1] if sourceMap
-    if answer then [answer[0] + 1, answer[1] + 1] else null
-
-  frames = for frame in stack
-    break if frame.getFunction() is exports.run
-    "  at #{formatSourcePosition frame, getSourceMapping}"
-
-  "#{err.name}: #{err.message ? ''}\n#{frames.join '\n'}\n"
-

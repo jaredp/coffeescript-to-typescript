@@ -4,8 +4,6 @@
 
 # Peek at the beginning of a given string to see if it matches a sequence.
 
-fs = require 'fs'
-
 exports.starts = (string, literal, start) ->
   literal is string.substr start, literal.length
 
@@ -152,7 +150,7 @@ translating_code = ''
 
 exports.setTranslatingFile = (fname, code) ->
   translating_filename = fname
-  translating_code = code || fs.readFileSync(translating_filename, 'utf8')
+  translating_code = code
 
 exports.currentFilename = () -> translating_filename
 

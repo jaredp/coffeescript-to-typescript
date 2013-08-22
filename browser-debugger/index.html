@@ -75,35 +75,6 @@
   </div>
 
   <script src="http://coffeescript.org/documentation/vendor/jquery-1.6.4.js"></script>
-  <script src="http://underscorejs.org/underscore-min.js"></script>
-  <script type="text/javascript">
-  function require(path){ return require[path]; }
-  require['underscore'] = _;
-  </script>
-  <script src="helpers.js"></script>
-  <script src="rewriter.js"></script>
-  <script src="lexer.js"></script>
-  <script src="parser.js"></script>
-  <script src="scope.js"></script>
-  <script src="nodes.js"></script>
-  <script src="transformer.js"></script>
-  <script src="coffee-script.js"></script>
-  <script src="compile-with-comments.js"></script>
-
-  <script type="text/javascript">
-    var CoffeeScript = require('./coffee-script');
-    var Fakeblock = require('./compile-with-comments');
-
-    function compileSource() {
-      source = $('#repl_source').val();
-      source = Fakeblock.makeFakeblocks(source);
-      window.compiledJS = CoffeeScript.compile(source, {bare: true});
-      $('#repl_results').text(window.compiledJS);
-    }
-
-    $('#repl_source').keyup(compileSource);
-    compileSource();
-
-  </script>
+  <script src="transpiler.js"></script>
 </body>
 </html>
