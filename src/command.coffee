@@ -11,7 +11,7 @@ helpers        = require './helpers'
 optparse       = require './optparse'
 CoffeeScript   = require './coffee-script'
 FakeBlock      = require './compile-with-comments'
-{reAddComments}= require '../reAddComments'
+reAddComments  = require 're-add-comments'
 {spawn, exec}  = require 'child_process'
 {EventEmitter} = require 'events'
 require('source-map-support').install()

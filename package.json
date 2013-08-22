@@ -33,7 +33,8 @@
     "source-map": "*",
     "source-map-support": "*",
     "underscore": "*",
-    "underscore.string": "*"
+    "underscore.string": "*",
+    "re-add-comments": "*"
   },
   "devDependencies": {
     "uglify-js":  "~2.2",
