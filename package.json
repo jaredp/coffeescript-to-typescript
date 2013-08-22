@@ -1,12 +1,11 @@
 {
-  "name":         "coffee-script",
-  "description":  "Unfancy JavaScript",
-  "keywords":     ["javascript", "language", "coffeescript", "compiler"],
-  "author":       "Jeremy Ashkenas",
-  "version":      "1.6.3",
+  "name":         "coffee-script-to-typescript",
+  "description":  "Mmm, static types",
+  "keywords":     ["javascript", "language", "typescript", "coffeescript", "compiler"],
+  "author":       "Palantir Technologies",
+  "version":      "0.1",
   "licenses":     [{
     "type":       "MIT",
-    "url":        "https://raw.github.com/jashkenas/coffee-script/master/LICENSE"
   }],
   "engines":      {
     "node":       ">=0.8.0"
@@ -16,17 +15,11 @@
   },
   "main" : "./lib/coffee-script/coffee-script",
   "bin":          {
-    "coffee":     "./bin/coffee",
-    "cake":       "./bin/cake"
+    "coffee-to-typescript":     "./bin/coffee",
   },
-  "scripts": {
-    "test": "node ./bin/cake test"
-  },
-  "homepage":     "http://coffeescript.org",
-  "bugs":         "https://github.com/jashkenas/coffee-script/issues",
   "repository":   {
     "type": "git",
-    "url": "git://github.com/jashkenas/coffee-script.git"
+    "url": "https://github.com/palantir/coffee-script-to-typescript.git"
   },
   "dependencies": {
     "express": "*",
@@ -34,7 +27,8 @@
     "source-map-support": "*",
     "underscore": "*",
     "underscore.string": "*",
-    "re-add-comments": "*"
+    "re-add-comments": "*",
+    "line-input-stream": "~1.0.1"
   },
   "devDependencies": {
     "uglify-js":  "~2.2",
