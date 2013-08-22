@@ -3,9 +3,9 @@
   "description":  "Mmm, static types",
   "keywords":     ["javascript", "language", "typescript", "coffeescript", "compiler"],
   "author":       "Palantir Technologies",
-  "version":      "0.1",
+  "version":      "0.1.0",
   "licenses":     [{
-    "type":       "MIT",
+    "type":       "MIT"
   }],
   "engines":      {
     "node":       ">=0.8.0"
@@ -15,7 +15,7 @@
   },
   "main" : "./lib/coffee-script/coffee-script",
   "bin":          {
-    "coffee-to-typescript":     "./bin/coffee",
+    "coffee-to-typescript":     "./bin/coffee"
   },
   "repository":   {
     "type": "git",
