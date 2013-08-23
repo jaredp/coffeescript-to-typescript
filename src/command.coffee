@@ -11,6 +11,7 @@ helpers        = require './helpers'
 optparse       = require './optparse'
 CoffeeScript   = require './coffee-script'
 FakeBlock      = require './compile-with-comments'
+TPA            = require './typescript-property-accumulator'
 reAddComments  = require 're-add-comments'
 {spawn, exec}  = require 'child_process'
 {EventEmitter} = require 'events'
@@ -38,15 +39,11 @@ BANNER = '''
 
 # The list of all the valid option flags that `coffee` knows how to handle.
 SWITCHES = [
-  ['-b', '--bare',            'compile without a top-level function wrapper']
-  ['-c', '--compile',         'compile to JavaScript and save as .js files']
-  ['-e', '--eval',            'pass a string from the command line as input']
+  ['-c', '--compile',         'compile to TypeScript and save as .ts files']
   ['-h', '--help',            'display this help message']
-  ['-i', '--interactive',     'run an interactive CoffeeScript REPL']
   ['-j', '--join [FILE]',     'concatenate the source CoffeeScript before compiling']
   ['-m', '--map',             'generate source map and save as .map files']
   ['-n', '--nodes',           'print out the parse tree that the parser produces']
-  [      '--nodejs [ARGS]',   'pass options directly to the "node" binary']
   ['-o', '--output [DIR]',    'set the output directory for compiled JavaScript']
   ['-p', '--print',           'print out the compiled JavaScript']
   ['-s', '--stdio',           'listen for and compile scripts over stdio']
@@ -70,6 +67,7 @@ optionParser = null
 
 failedFiles = []
 runningFiles = []
+generatedFiles = []
 setRunningFiles = (files) ->
   runningFiles.push files...
 fileFinished = (file) ->
@@ -88,17 +86,17 @@ exports.run = ->
   return forkNode()                      if opts.nodejs
   return usage()                         if opts.help
   return version()                       if opts.version
-  return require('./repl').start()       if opts.interactive
   if opts.watch and not fs.watch
     return printWarn "The --watch feature depends on Node v0.6.0+. You are running #{process.version}."
   return compileStdio()                  if opts.stdio
-  return compileScript null, sources[0]  if opts.eval
-  return require('./repl').start()       unless sources.length
   literals = if opts.run then sources.splice 1 else []
   process.argv = process.argv[0..1].concat literals
   process.argv[0] = 'coffee'
   onCompilationFinished = ->
-    printLine "#{failedFiles.length} files failed" if failedFiles.length
+    if failedFiles.length
+      printLine "#{failedFiles.length} files failed"
+    else
+      TPA generatedFiles if generatedFiles.length
   runningFiles.push sources...
   for source in sources
     compilePath source, yes, path.normalize source
@@ -174,6 +172,7 @@ compileScript = (file, input, base=null) ->
         printLine t.output.trim()
       else if o.compile or o.map
         writeJs base, t.file, t.output, options.jsPath, t.sourceMap
+        generatedFiles.push options.jsPath
   catch err
     CoffeeScript.emit 'failure', err, task
     return if CoffeeScript.listeners('failure').length

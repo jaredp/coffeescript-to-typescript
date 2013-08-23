@@ -31,7 +31,9 @@
     "line-input-stream": "~1.0.1"
   },
   "devDependencies": {
-    "uglify-js":  "~2.2",
-    "jison":      ">=0.2.0"
+    "uglify-js":           "~2.2",
+    "jison":               ">=0.2.0",
+    "coffee-script":       "*",
+    "commonjs-everywhere": "*"
   }
 }
