@@ -194,7 +194,7 @@ exports.prettyErrorMessage = (error, filename, code, useColors, errorOrWarn="err
   end      = if first_line is last_line then last_column + 1 else codeLine.length
   marker   = repeat(' ', start) + repeat('^', end - start)
 
-  if useColors
+  if useColors and codeLine
     colorize = (str) -> "\x1B[1;31m#{str}\x1B[0m"
     codeLine = codeLine[...start] + colorize(codeLine[start...end]) + codeLine[end..]
     marker   = colorize marker
