@@ -40,3 +40,8 @@ This is done intentionally to force the code to move to idiomatic TypeScript, ra
 
 - If you try to import handlebars files, the TypeScript compiler will complain that you are importing a file that doesn't exist.  To fix this, copy the `handlebars.d.ts` file in this project next to every `.hbs` file.  For example, for views/main.hbs, you could `cp coffee-script-to-typescript/handlebars.d.ts views/main.d.ts`.
 
+### Backbone Notes
+
+- Bound methods (methods using the fat arrow syntax) called from the constructor or `initialize()` method should be converted to unbound methods (normal methods in TypeScript) because bound methods are not available until an object is fully constructed.  TypeScript calls the super constructor at the beginning of the constructor, so when a subclass of a Backbone model or view has bound methods, they can't be called from the constructor or `initialize()` method because they won't exist yet.
+
+- The `defaults`, `events`, and `routes` fields should all be converted to methods because fields are not set until the end of object construction.
