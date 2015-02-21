@@ -4,7 +4,7 @@
 
 ## Install
 
-    sudo npm install -g coffee-script-to-typescritpt
+    sudo npm install -g coffee-script-to-typescript
 
 ### Usage
 
