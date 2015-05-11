@@ -10,8 +10,8 @@ addProperties = (tscripts) ->
   realErrorCount = 0
 
   tsc = spawn __dirname + '/../node_modules/typescript/bin/tsc', tscripts
-  lineStream(tsc.stderr).on('line', (line)=>
-    EREGEX = /error TS2094: The property '(.*)' does not exist on value of type '(.*)'\.\n?$/
+  lineStream(tsc.stdout).on('line', (line)=>
+    EREGEX = /error TS2339: Property '(.*)' does not exist on type '(.*)'/
     if [match, property, type] = line.match(EREGEX) or no
       klass = (classes[type] ||= [])
       klass.push property if property not in klass
