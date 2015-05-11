@@ -9,7 +9,7 @@ addProperties = (tscripts) ->
   classes = []
   realErrorCount = 0
 
-  tsc = spawn 'tsc', tscripts
+  tsc = spawn __dirname + '/../node_modules/typescript/bin/tsc', tscripts
   lineStream(tsc.stderr).on('line', (line)=>
     EREGEX = /error TS2094: The property '(.*)' does not exist on value of type '(.*)'\.\n?$/
     if [match, property, type] = line.match(EREGEX) or no

@@ -28,7 +28,8 @@
     "underscore": "*",
     "underscore.string": "*",
     "re-add-comments": "*",
-    "line-input-stream": "~1.0.1"
+    "line-input-stream": "~1.0.1",
+    "typescript": "*"
   },
   "devDependencies": {
     "uglify-js":           "~2.2",
