@@ -58,7 +58,7 @@ class ES5For extends Call
   constructor: (@loopSource, name, body) ->
     @forBody = new Code([new Param name], Block.wrap([body]), 'boundfunc')
     @forBody.undeclaredScope = @forBody.sharedScope = on
-    super new Value(loopSource, [new Access new Literal "map"]), [@forBody]
+    super new Value(@loopSource, [new Access new Literal "map"]), [@forBody]
 
   compileNode: (o) ->
     return super unless o.level == LEVEL_TOP
